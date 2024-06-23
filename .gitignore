@@ -1,0 +1,4 @@
+*.yml
+*.pb
+!docker-compose.yml
+.idea/
