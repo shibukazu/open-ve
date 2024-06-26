@@ -2,6 +2,7 @@ package dsl
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -11,23 +12,78 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type DSLReader struct {
-	redis *redis.Client
+type Variable struct {
+	Name string `yaml:"name" json:"name"`
+	Type string `yaml:"type" json:"type"`
+}
+
+func (v *Variable) parseVariable() (cel.EnvOption, error) {
+	switch v.Type {
+	case "int":
+		return cel.Variable(v.Name, cel.IntType), nil
+	case "uint":
+		return cel.Variable(v.Name, cel.UintType), nil
+	case "double":
+		return cel.Variable(v.Name, cel.DoubleType), nil
+	case "bool":
+		return cel.Variable(v.Name, cel.BoolType), nil
+	case "bytes":
+		return cel.Variable(v.Name, cel.BytesType), nil
+	// TODO: listとmap向けの再帰パースの実装
+
+	default:
+		return nil, fmt.Errorf("unknown type: %s", v.Type)
+	}
+}
+
+type Validation struct {
+	ID        string     `yaml:"id"`
+	Cel       string     `yaml:"cel"`
+	Variables []Variable `yaml:"variables" json:"variables"`
+}
+
+func GetASTID(id string) string {
+	return fmt.Sprintf("ast:%s", id)
+}
+func GetVariablesID(id string) string {
+	return fmt.Sprintf("vars:%s", id)
+}
+
+func (v *Validation) serializeVariables() ([]byte, error) {
+	bytes, err := json.Marshal(v.Variables)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
+
+func DeserializeVariables(bytes []byte) ([]Variable, error) {
+	var vars []Variable
+	err := json.Unmarshal(bytes, &vars)
+	if err != nil {
+		return nil, err
+	}
+	return vars, nil
+}
+
+func ToCELVariables(vars []Variable) ([]cel.EnvOption, error) {
+	celVars := make([]cel.EnvOption, 0, len(vars))
+	for _, v := range vars {
+		v, err := v.parseVariable()
+		if err != nil {
+			return nil, err
+		}
+		celVars = append(celVars, v)
+	}
+	return celVars, nil
 }
 
 type DSL struct {
 	Validations []Validation `yaml:"validations"`
 }
 
-type Validation struct {
-	ID        string     `yaml:"id"`
-	Cel       string     `yaml:"cel"`
-	Variables []Variable `yaml:"variables"`
-}
-
-type Variable struct {
-	Name string `yaml:"name"`
-	Type string `yaml:"type"`
+type DSLReader struct {
+	redis *redis.Client
 }
 
 func NewDSLReader(redis *redis.Client) *DSLReader {
@@ -49,16 +105,20 @@ func (r *DSLReader) Read(ctx context.Context, bytes []byte) error {
 
 func (r *DSLReader) parseAndSaveDSL(dsl DSL) error {
 	for _, v := range dsl.Validations {
-		vars := make([]cel.EnvOption, 0, len(v.Variables))
-		for _, vv := range v.Variables {
-			v, err := r.parseVariable(vv)
-			if err != nil {
-				return err
-			}
-			vars = append(vars, v)
+		// Save Variables to Redis
+		variablesBytes, err := v.serializeVariables()
+		if err != nil {
+			log.Fatalf("Failed to serialize Variables: %v", err)
+		}
+		if err := r.redis.Set(GetVariablesID(v.ID), variablesBytes, 0).Err(); err != nil {
+			log.Fatalf("Failed to save Variables to Redis: %v", err)
 		}
 
-		env, err := cel.NewEnv(vars...)
+		celVariables, err := ToCELVariables(v.Variables)
+		if err != nil {
+			log.Fatalf("Failed to convert Variables to CEL Variables: %v", err)
+		}
+		env, err := cel.NewEnv(celVariables...)
 		if err != nil {
 			return err
 		}
@@ -75,31 +135,11 @@ func (r *DSLReader) parseAndSaveDSL(dsl DSL) error {
 		if err != nil {
 			log.Fatalf("Failed to serialize AST: %v", err)
 		}
-
 		// Save AST to Redis
-		if err := r.redis.Set(v.ID, astBytes, 0).Err(); err != nil {
+		if err := r.redis.Set(GetASTID(v.ID), astBytes, 0).Err(); err != nil {
 			log.Fatalf("Failed to save AST to Redis: %v", err)
 		}
 	}
 
 	return nil
-}
-
-func (r *DSLReader) parseVariable(v Variable) (cel.EnvOption, error) {
-	switch v.Type {
-	case "int":
-		return cel.Variable(v.Name, cel.IntType), nil
-	case "uint":
-		return cel.Variable(v.Name, cel.UintType), nil
-	case "double":
-		return cel.Variable(v.Name, cel.DoubleType), nil
-	case "bool":
-		return cel.Variable(v.Name, cel.BoolType), nil
-	case "bytes":
-		return cel.Variable(v.Name, cel.BytesType), nil
-	// TODO: listとmap向けの再帰パースの実装
-
-	default:
-		return nil, fmt.Errorf("unknown type: %s", v.Type)
-	}
 }
