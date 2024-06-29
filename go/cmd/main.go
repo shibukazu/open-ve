@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/go-redis/redis"
 	"github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/validator"
 )
 
 func main() {
@@ -27,4 +29,13 @@ func main() {
 	}
 
 	dslReader.Read(ctx, data)
+
+	validator := validator.NewValidator(redis)
+	res, err := validator.Validate("x-price", map[string]interface{}{
+		"num": 100,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(res)
 }
