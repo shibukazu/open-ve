@@ -1,0 +1,33 @@
+syntax = "proto3";
+package dsl.v1;
+
+
+option go_package = "proto/dsl/v1";
+
+message Validation {
+    string id = 1;
+    string cel = 2;
+    repeated Variable variables = 3;
+}
+
+message Variable {
+    string name = 1;
+    string type = 2;
+}
+
+message RegisterRequest {
+  repeated Validation validations = 1;
+}
+
+message RegisterResponse {}
+
+message ReadRequest {}
+
+message ReadResponse {
+  repeated Validation validations = 1;
+}
+
+service DSLService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Read(ReadRequest) returns (ReadResponse);
+}

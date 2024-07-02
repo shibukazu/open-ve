@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - redis-net
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+
+networks:
+  redis-net:
+    driver: bridge
