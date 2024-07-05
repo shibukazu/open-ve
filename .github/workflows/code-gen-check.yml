@@ -1,0 +1,25 @@
+name: Code Gen Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-diff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1
+      - name: Run Buf Generate
+        run: buf generate
+      - name: Check for changes
+        run: |
+          if [[ `git status --porcelain` ]]; then
+          echo "Generated code is not up to date. Please run 'buf generate' and commit the changes."
+          git diff
+          exit 1
+          else
+          echo "Generated code is up to date."
+          fi
