@@ -1,6 +1,8 @@
 syntax = "proto3";
 package dsl.v1;
 
+import "google/api/annotations.proto";
+
 
 option go_package = "proto/dsl/v1";
 
@@ -28,6 +30,15 @@ message ReadResponse {
 }
 
 service DSLService {
-  rpc Register(RegisterRequest) returns (RegisterResponse);
-  rpc Read(ReadRequest) returns (ReadResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/v1/dsl"
+      body: "*"
+    };
+  };
+  rpc Read(ReadRequest) returns (ReadResponse) {
+    option (google.api.http) = {
+      get: "/v1/dsl"
+    };
+  };
 }

@@ -2,6 +2,8 @@ syntax = "proto3";
 package validate.v1;
 
 import "google/protobuf/any.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "proto/validate/v1";
 
@@ -16,5 +18,10 @@ message CheckResponse {
 }
 
 service ValidateService {
-  rpc Check(CheckRequest) returns (CheckResponse);
+  rpc Check(CheckRequest) returns (CheckResponse) {
+    option (google.api.http) = {
+      post: "/v1/check"
+      body: "*"
+    };
+  }
 }

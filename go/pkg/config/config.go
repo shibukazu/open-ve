@@ -19,10 +19,12 @@ type ServerConfig struct {
 }
 
 type GrpcConfig struct {
+	Host string `yaml:"host"`
 	Port string `yaml:"port"`
 }
 
 type HttpConfig struct {
+	Host string `yaml:"host"`
 	Port string `yaml:"port"`
 }
 
@@ -59,9 +61,11 @@ func defaultConfig () *Config {
 	return &Config{
 		Server: ServerConfig{
 			Grpc: GrpcConfig{
+				Host: "localhost",
 				Port: "9000",
 			},
 			Http: HttpConfig{
+				Host: "localhost",
 				Port: "8080",
 			},
 		},

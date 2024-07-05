@@ -8,3 +8,11 @@ plugins:
     out: go
     opt:
       - paths=source_relative
+  - plugin: grpc-gateway
+    out: go
+    opt:
+      - paths=source_relative
+  - plugin: openapiv2
+    out: openapi
+    opt:
+      - allow_merge=true

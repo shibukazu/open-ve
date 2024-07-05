@@ -1,0 +1,5 @@
+version: v1
+name: buf.build/shibukazu/open-ve
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/grpc-ecosystem/grpc-gateway

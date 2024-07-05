@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/google/cel-go v0.20.1
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0
 	github.com/morikuni/failure/v2 v2.0.0-20240419002657-2551069d1c86
 	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8
 	google.golang.org/grpc v1.64.0
@@ -15,7 +16,7 @@ require (
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.33.1 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
@@ -26,5 +27,4 @@ require (
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240513163218-0867130af1f8 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
