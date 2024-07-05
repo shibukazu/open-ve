@@ -9,18 +9,7 @@ import (
 )
 
 type Config struct {
-	Server ServerConfig `yaml:"server"`
 	Redis  RedisConfig  `yaml:"redis"`
-}
-
-type ServerConfig struct {
-	Grpc GrpcConfig `yaml:"grpc"`
-	Http HttpConfig `yaml:"http"`
-}
-
-type GrpcConfig struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
 }
 
 type HttpConfig struct {
@@ -59,18 +48,8 @@ func NewConfig() *Config {
 
 func defaultConfig () *Config {
 	return &Config{
-		Server: ServerConfig{
-			Grpc: GrpcConfig{
-				Host: "localhost",
-				Port: "9000",
-			},
-			Http: HttpConfig{
-				Host: "localhost",
-				Port: "8080",
-			},
-		},
 		Redis: RedisConfig{
-			Addr:     "localhost:6379",
+			Addr:     "redis:6379",
 			Password: "",
 			DB:       0,
 			PoolSize: 1000,

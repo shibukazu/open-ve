@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/go-redis/redis"
 	"github.com/shibukazu/open-ve/go/pkg/config"
@@ -11,7 +12,8 @@ import (
 )
 
 func main() {
-	var ctx = context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	cfg := config.NewConfig()
 
@@ -21,10 +23,19 @@ func main() {
 		DB:      cfg.Redis.DB,
 		PoolSize: cfg.Redis.PoolSize,
 	})
-
 	dslReader := dsl.NewDSLReader(redis)
 	validator := validator.NewValidator(redis)
+	gw := server.NewGateway()
+	go func () {
+		slog.Info("🚀gateway is running")
+		gw.Run(ctx)
+	}()
 
-	srv := server.NewGrpc(validator, dslReader, &cfg.Server)
-	srv.Run(ctx)
+	grpc := server.NewGrpc(validator, dslReader)
+	go func () {
+		slog.Info("🚀grpc is running")
+		grpc.Run(ctx)
+	}()
+
+	<-ctx.Done()
 }
