@@ -5,35 +5,35 @@ on:
     branches:
       - main
 
-jobs:
-  check-diff:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
 
+jobs:
+  buf-check:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
         with:
-          go-version: 1.22.2
-      - name: Install Deps
+          fetch-depth: 0
+      - uses: bufbuild/buf-setup-action@9990c72db080fa39cf561230b8d2d7b736681f85 # v1.30.1
+        with:
+          version: "1.28.1"
+      - uses: bufbuild/buf-lint-action@06f9dd823d873146471cfaaf108a993fe00e5325 # v1.1.1
+      - uses: bufbuild/buf-breaking-action@c57b3d842a5c3f3b454756ef65305a50a587c5ba # v1.1.4
+        with:
+          against: main
+      - run: buf format -d --exit-code
+
+  diff-openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        with:
+          fetch-depth: 0
+      - uses: bufbuild/buf-setup-action@9990c72db080fa39cf561230b8d2d7b736681f85 # v1.30.1
+        with:
+          version: "1.28.1"
+      - name: "Generate OpenAPI & Diff"
         run: |
-          go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
-          go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
-          go get google.golang.org/protobuf/cmd/protoc-gen-go
-          go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
-      - name: Debug
-        run: |
-          echo $GOPATH
-          echo $PATH
-          which protoc-gen-go
-      - name: Run Buf Generate
-        run: buf generate
-      - name: Check for changes
-        run: |
-          if [[ `git status --porcelain` ]]; then
-          echo "Generated code is not up to date. Please run 'buf generate' and commit the changes."
-          git diff
-          exit 1
-          else
-          echo "Generated code is up to date."
-          fi
+          make all
+          git diff --text --exit-code docs/openapiv2/apidocs.swagger.json proto/**/*.go
