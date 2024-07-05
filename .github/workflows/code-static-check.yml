@@ -17,5 +17,7 @@ jobs:
           go-version: 1.22.2
       - name: Run Buf Lint
         run: buf lint
+      - name: Run Buf format
+        run: buf format -d --exit-code
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
