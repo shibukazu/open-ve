@@ -138,7 +138,7 @@ func (r *DSLReader) parseAndSaveDSL(dsl *DSL) error {
 			return err
 		}
 		if err := r.redis.Set(GetVariablesID(v.ID), variablesBytes, 0).Err(); err != nil {
-			failure.Translate(err, appError.ErrRedisOperationFailed)
+			return failure.Translate(err, appError.ErrRedisOperationFailed)
 		}
 
 		celVariables, err := ToCELVariables(v.Variables)
