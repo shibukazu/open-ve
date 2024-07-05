@@ -7,8 +7,19 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - redis-net
+      - default
     restart: unless-stopped
+  server:
+    build:
+      context: .
+    container_name: server
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    networks:
+      - default
+    depends_on:
+      - redis
   apidocs:
     image: swaggerapi/swagger-ui
     container_name: apidocs
@@ -19,11 +30,11 @@ services:
       - ./openapi:/openapi
     restart: unless-stopped
     ports:
-      - "8081:8080"
+      - "9000:8080"
 
 volumes:
   redis-data:
 
 networks:
-  redis-net:
+  default:
     driver: bridge

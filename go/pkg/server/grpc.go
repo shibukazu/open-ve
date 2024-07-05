@@ -6,7 +6,6 @@ import (
 
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
-	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl"
 	svcDSL "github.com/shibukazu/open-ve/go/pkg/services/dsl/v1"
 	svcValidate "github.com/shibukazu/open-ve/go/pkg/services/validate/v1"
@@ -19,22 +18,20 @@ import (
 )
 
 type Grpc struct {
-	serverConfig *config.ServerConfig
 	dslReader *dsl.DSLReader
 	validator *validator.Validator
 }
 
-func NewGrpc(validator *validator.Validator, dslReader *dsl.DSLReader, serverConfig *config.ServerConfig) *Grpc {
+func NewGrpc(validator *validator.Validator, dslReader *dsl.DSLReader) *Grpc {
 	return &Grpc{
 		validator: validator,
 		dslReader: dslReader,
-		serverConfig: serverConfig,
 	}
 }
 
 func (g *Grpc) Run(ctx context.Context) {
 
-	listen, err := net.Listen("tcp", ":" + g.serverConfig.Grpc.Port)
+	listen, err := net.Listen("tcp", grpcEndpoint)
 	if err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed))
 	}
@@ -49,7 +46,6 @@ func (g *Grpc) Run(ctx context.Context) {
 
 	reflection.Register(grpcServer)
 
-	// 以下でリッスンし続ける
 	if err := grpcServer.Serve(listen); err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed))
 	}
