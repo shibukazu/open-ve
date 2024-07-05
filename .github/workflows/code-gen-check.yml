@@ -12,6 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: bufbuild/buf-setup-action@v1
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.22.2
+      - name: Install protoc-gen-go
+        run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
       - name: Run Buf Generate
         run: buf generate
       - name: Check for changes
