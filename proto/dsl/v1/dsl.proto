@@ -2,19 +2,35 @@ syntax = "proto3";
 package dsl.v1;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 
 option go_package = "proto/dsl/v1";
 
 message Validation {
-    string id = 1;
-    string cel = 2;
-    repeated Variable variables = 3;
+    string id = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"price\""}
+    ];
+    string cel = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"number % 3 == 0 || number < 5\""}
+    ];
+    repeated Variable variables = 3 [
+      (google.api.field_behavior) = REQUIRED
+    ];
 }
 
 message Variable {
-    string name = 1;
-    string type = 2;
+    string name = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"number\""}
+    ];
+    string type = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"int\""}
+    ];
 }
 
 message RegisterRequest {
@@ -35,10 +51,22 @@ service DSLService {
       post: "/v1/dsl"
       body: "*"
     };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Register DSL"
+      tags: ["DSL"]
+      operation_id: "Register"
+    };
   };
   rpc Read(ReadRequest) returns (ReadResponse) {
     option (google.api.http) = {
       get: "/v1/dsl"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Read DSL"
+      tags: ["DSL"]
+      operation_id: "Read"
     };
   };
 }

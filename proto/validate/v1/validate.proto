@@ -3,18 +3,31 @@ package validate.v1;
 
 import "google/protobuf/any.proto";
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "proto/validate/v1";
 
 message CheckRequest {
-  string id = 1;
-  map<string, google.protobuf.Any> variables = 2;
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"price\""}
+  ];
+  map<string, google.protobuf.Any> variables = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "{\"number\": {\"@type\": \"type.googleapis.com/google.protobuf.Int32Value\", \"value\": 100}}"}
+  ];
 }
 
 message CheckResponse {
-  bool is_valid = 1;
-  string message = 2;
+  bool is_valid = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "false"}
+  ];
+  string message = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"price is too high\""}
+  ];
 }
 
 service ValidateService {
@@ -22,6 +35,12 @@ service ValidateService {
     option (google.api.http) = {
       post: "/v1/check"
       body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Check validation"
+      tags: ["Validation"]
+      operation_id: "Check"
     };
   }
 }

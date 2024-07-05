@@ -12,7 +12,11 @@ plugins:
     out: go
     opt:
       - paths=source_relative
-  - plugin: openapiv2
+  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.16.0
     out: openapi
     opt:
       - allow_merge=true
+      - merge_file_name=openapi.json
+      - openapi_naming_strategy=simple
+      - disable_service_tags=true
+      - disable_default_errors=true
