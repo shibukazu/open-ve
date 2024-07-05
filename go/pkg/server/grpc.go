@@ -18,33 +18,33 @@ import (
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
 )
 
-type Server struct {
+type Grpc struct {
 	serverConfig *config.ServerConfig
 	dslReader *dsl.DSLReader
 	validator *validator.Validator
 }
 
-func NewServer(validator *validator.Validator, dslReader *dsl.DSLReader, serverConfig *config.ServerConfig) *Server {
-	return &Server{
+func NewGrpc(validator *validator.Validator, dslReader *dsl.DSLReader, serverConfig *config.ServerConfig) *Grpc {
+	return &Grpc{
 		validator: validator,
 		dslReader: dslReader,
 		serverConfig: serverConfig,
 	}
 }
 
-func (s *Server) Run(ctx context.Context) {
+func (g *Grpc) Run(ctx context.Context) {
 
-	listen, err := net.Listen("tcp", ":" + s.serverConfig.Grpc.Port)
+	listen, err := net.Listen("tcp", ":" + g.serverConfig.Grpc.Port)
 	if err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed))
 	}
 
 	grpcServer := grpc.NewServer()
 
-	validateService := svcValidate.NewService(ctx, s.validator)
+	validateService := svcValidate.NewService(ctx, g.validator)
 	pbValidate.RegisterValidateServiceServer(grpcServer, validateService)
 
-	dslService := svcDSL.NewService(ctx, s.dslReader)
+	dslService := svcDSL.NewService(ctx, g.dslReader)
 	pbDSL.RegisterDSLServiceServer(grpcServer, dslService)
 
 	reflection.Register(grpcServer)

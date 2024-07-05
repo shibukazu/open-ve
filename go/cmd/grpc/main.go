@@ -25,6 +25,6 @@ func main() {
 	dslReader := dsl.NewDSLReader(redis)
 	validator := validator.NewValidator(redis)
 
-	srv := server.NewServer(validator, dslReader, &cfg.Server)
+	srv := server.NewGrpc(validator, dslReader, &cfg.Server)
 	srv.Run(ctx)
 }
