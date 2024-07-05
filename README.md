@@ -6,7 +6,7 @@ Centralized and Consistent Data Validation Engine
 
 This project is still under development and not ready for production use.
 
-We only support limited CEL expression and gRPC API.
+We only support limited CEL expression.
 
 ## Setup
 
@@ -16,11 +16,6 @@ If you want to specify the configuration below, you can create a `config.yaml` f
 If you don't specify the configuration, the default values will be used.
 
 ```yaml
-server:
-  grpc:
-    port: 9000
-  rest:
-    port: 8080
 redis:
   addr: "localhost:6379"
   password: ""
@@ -28,16 +23,10 @@ redis:
   poolSize: 10
 ```
 
-### Redis
+### Run
 
 ```bash
 docker compose up -d
-```
-
-### Server
-
-```bash
-go run cmd/main.go
 ```
 
 ## Example
