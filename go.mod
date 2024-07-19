@@ -7,6 +7,7 @@ require (
 	github.com/google/cel-go v0.20.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0
 	github.com/morikuni/failure/v2 v2.0.0-20240419002657-2551069d1c86
+	github.com/rs/cors v1.11.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
