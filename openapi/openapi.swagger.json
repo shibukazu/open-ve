@@ -112,7 +112,7 @@
           "type": "object",
           "example": {
             "number": {
-              "@type": "type.googleapis.com/google.protobuf.Int32Value",
+              "type": "int",
               "value": 100
             }
           },
