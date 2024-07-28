@@ -1,6 +1,8 @@
 package validator
 
 import (
+	"log/slog"
+
 	"github.com/go-redis/redis"
 	"github.com/google/cel-go/cel"
 	"github.com/morikuni/failure/v2"
@@ -11,11 +13,12 @@ import (
 )
 
 type Validator struct {
-	redis *redis.Client
+	redis  *redis.Client
+	logger *slog.Logger
 }
 
-func NewValidator(redis *redis.Client) *Validator {
-	return &Validator{redis: redis}
+func NewValidator(logger *slog.Logger, redis *redis.Client) *Validator {
+	return &Validator{redis: redis, logger: logger}
 }
 
 func (v *Validator) Validate(id string, variables map[string]interface{}) (bool, error) {

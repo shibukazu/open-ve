@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/go-redis/redis"
 	"github.com/google/cel-go/cel"
@@ -83,11 +84,12 @@ type DSL struct {
 }
 
 type DSLReader struct {
-	redis *redis.Client
+	redis  *redis.Client
+	logger *slog.Logger
 }
 
-func NewDSLReader(redis *redis.Client) *DSLReader {
-	return &DSLReader{redis: redis}
+func NewDSLReader(logger *slog.Logger, redis *redis.Client) *DSLReader {
+	return &DSLReader{redis: redis, logger: logger}
 }
 
 func (r *DSLReader) Read(ctx context.Context) (*DSL, error) {
@@ -107,7 +109,7 @@ func (r *DSLReader) Register(ctx context.Context, dsl *DSL) error {
 	if err := r.resetRedis(); err != nil {
 		return err
 	}
-	if err := r.parseAndSaveDSL(dsl) ; err != nil {
+	if err := r.parseAndSaveDSL(dsl); err != nil {
 		return err
 	}
 	return nil

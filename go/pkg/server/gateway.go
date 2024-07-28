@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -16,15 +17,18 @@ import (
 type Gateway struct {
 	httpConfig *config.HttpConfig
 	gRPCConfig *config.GRPCConfig
+	logger     *slog.Logger
 }
 
 func NewGateway(
 	httpConfig *config.HttpConfig,
 	gRPCConfig *config.GRPCConfig,
+	logger *slog.Logger,
 ) *Gateway {
 	return &Gateway{
 		httpConfig: httpConfig,
 		gRPCConfig: gRPCConfig,
+		logger:     logger,
 	}
 }
 
