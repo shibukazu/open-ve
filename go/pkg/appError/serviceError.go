@@ -5,27 +5,24 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-const (
-	ErrServerStartFailed = "ServerStartFailed"
 
-	ErrYAMLSyntaxError = "YAMLSyntaxError"
-	ErrDSLSyntaxError = "DSLSyntaxError"
-	ErrDSLNotFound = "DSLNotFound"
+const (
+	ErrYAMLSyntaxError      = "YAMLSyntaxError"
+	ErrDSLSyntaxError       = "DSLSyntaxError"
+	ErrDSLNotFound          = "DSLNotFound"
 	ErrRedisOperationFailed = "RedisOperationFailed"
-	ErrCELSyantaxError = "CELSyantaxError"
+	ErrCELSyantaxError      = "CELSyantaxError"
 
 	ErrRequestParameterInvalid = "RequestParameterInvalid"
 
 	ErrValidateServiceIDNotFound = "ValidateServiceIDNotFound"
-	
+
 	ErrDSLServiceDSLSyntaxError = "DSLServiceDSLSyntaxError"
 )
 
 func ToGRPCError(err error) error {
 	var code codes.Code
 	switch failure.CodeOf(err) {
-	case ErrServerStartFailed:
-		code = codes.Internal
 	case ErrYAMLSyntaxError:
 		code = codes.InvalidArgument
 	case ErrDSLSyntaxError:

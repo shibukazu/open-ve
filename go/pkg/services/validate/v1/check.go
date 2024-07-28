@@ -10,8 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-
-
 func (s *Service) Check(ctx context.Context, req *pb.CheckRequest) (*pb.CheckResponse, error) {
 	variables, err := convertAnyMapToInterfaceMap(req.Variables)
 	if err != nil {

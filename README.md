@@ -40,6 +40,26 @@ log:
 docker compose up
 ```
 
+## CEL
+
+We use [CEL](https://github.com/google/cel-spec/blob/master/doc/langdef.md) as the expression language for validation rules.
+
+Supported types:
+
+| Type          | Support | Future Support |
+| ------------- | ------- | -------------- |
+| `int`         | ✅      |                |
+| `uint`        | ✅      |                |
+| `double`      | ✅      |                |
+| `bool`        | ✅      | 　             |
+| `string`      | ✅      | 　             |
+| `bytes`       | ✅      | 　             |
+| `list`        |         | 　　 ✅        |
+| `map`         |         | 　 ✅          |
+| `null_type`   |         | 　 ❓          |
+| message names |         | 　 ❓          |
+| `type`        |         | 　 ❓          |
+
 ## Example (HTTP API)
 
 ### Register Validation Rules
@@ -112,10 +132,7 @@ curl --request POST \
   --data '{
     "id": "price",
     "variables": {
-      "number": {
-        "@type": "type.googleapis.com/google.protobuf.Int64Value",
-        "value": 0
-      }
+      "number": 0
     }
   }'
 ```

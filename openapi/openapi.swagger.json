@@ -111,10 +111,7 @@
         "variables": {
           "type": "object",
           "example": {
-            "number": {
-              "@type": "type.googleapis.com/google.protobuf.Int32Value",
-              "value": 100
-            }
+            "number": 100
           },
           "additionalProperties": {
             "$ref": "#/definitions/Any"
