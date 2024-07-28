@@ -13,6 +13,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/config"
+	"github.com/shibukazu/open-ve/go/pkg/dsl"
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
 	"google.golang.org/grpc"
@@ -23,17 +24,20 @@ type Gateway struct {
 	httpConfig *config.HttpConfig
 	gRPCConfig *config.GRPCConfig
 	logger     *slog.Logger
+	dslReader  *dsl.DSLReader
 }
 
 func NewGateway(
 	httpConfig *config.HttpConfig,
 	gRPCConfig *config.GRPCConfig,
 	logger *slog.Logger,
+	dslReader *dsl.DSLReader,
 ) *Gateway {
 	return &Gateway{
 		httpConfig: httpConfig,
 		gRPCConfig: gRPCConfig,
 		logger:     logger,
+		dslReader:  dslReader,
 	}
 }
 
@@ -51,7 +55,7 @@ func (g *Gateway) Run(ctx context.Context) {
 		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register dsl service on gateway")))
 	}
 
-	withMiddleware := validateRequestTypeConvertMiddleware(grpcGateway)
+	withMiddleware := g.validateRequestTypeConvertMiddleware(grpcGateway)
 
 	withCors := cors.New(cors.Options{
 		AllowedOrigins:   g.httpConfig.CORSAllowedOrigins,
@@ -66,7 +70,7 @@ func (g *Gateway) Run(ctx context.Context) {
 	}
 }
 
-func validateRequestTypeConvertMiddleware(next http.Handler) http.Handler {
+func (g *Gateway) validateRequestTypeConvertMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/check" && r.Method == "POST" {
 			var body map[string]interface{}
@@ -75,41 +79,47 @@ func validateRequestTypeConvertMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
+			id, ok := body["id"].(string)
+			if !ok {
+				http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("id field is invalid")).Error(), http.StatusBadRequest)
+				return
+			}
+
 			variables, ok := body["variables"].(map[string]interface{})
 			if !ok {
 				http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("variables field is invalid")).Error(), http.StatusBadRequest)
 				return
 			}
+
+			variableNameToCELType, err := g.dslReader.GetVariableNameToCELType(context.Background(), id)
+			if err != nil {
+				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusBadRequest)
+				return
+			}
+
+			convertedVariables := make(map[string]interface{}, len(variables))
 			for key, value := range variables {
-				variable, ok := value.(map[string]interface{})
-				if !ok {
-					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("variable %s is invalid", key)).Error(), http.StatusBadRequest)
-					return
-				}
-				variableType, ok := variable["type"].(string)
-				if !ok {
-					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("variable %s is invalid", key)).Error(), http.StatusBadRequest)
-					return
-				}
-				convertedType, err := convertCELTypeToGoogleProtobufType(variableType)
+				celType := variableNameToCELType[key]
+				convertedType, err := convertCELTypeToGoogleProtobufType(celType)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
-
-				delete(variable, "type")
+				variable := make(map[string]interface{}, 2)
 				variable["@type"] = convertedType
-				variables[key] = variable
+				variable["value"] = value
+
+				convertedVariables[key] = variable
 			}
-			body["variables"] = variables
-			modifiedBody, err := json.Marshal(body)
+			body["variables"] = convertedVariables
+			convertedBody, err := json.Marshal(body)
 			if err != nil {
 				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusInternalServerError)
 				return
 			}
 
-			r.Body = io.NopCloser(bytes.NewBuffer(modifiedBody))
-			r.ContentLength = int64(len(modifiedBody))
+			r.Body = io.NopCloser(bytes.NewBuffer(convertedBody))
+			r.ContentLength = int64(len(convertedBody))
 		}
 		next.ServeHTTP(w, r)
 	})

@@ -29,7 +29,7 @@ func main() {
 	dslReader := dsl.NewDSLReader(logger, redis)
 	validator := validator.NewValidator(logger, redis)
 
-	gw := server.NewGateway(&cfg.Http, &cfg.GRPC, logger)
+	gw := server.NewGateway(&cfg.Http, &cfg.GRPC, logger, dslReader)
 	go func() {
 		logger.Info("🚀 gateway is running")
 		gw.Run(ctx)

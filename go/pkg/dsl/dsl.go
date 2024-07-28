@@ -115,6 +115,28 @@ func (r *DSLReader) Register(ctx context.Context, dsl *DSL) error {
 	return nil
 }
 
+func (r *DSLReader) GetVariableNameToCELType(ctx context.Context, id string) (map[string]string, error) {
+	dsl, err := r.Read(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	validation := Validation{}
+	for _, v := range dsl.Validations {
+		if v.ID == id {
+			validation = v
+			break
+		}
+	}
+	variables := validation.Variables
+
+	var variableNameToCELType = make(map[string]string)
+	for _, v := range variables {
+		variableNameToCELType[v.Name] = v.Type
+	}
+	return variableNameToCELType, nil
+}
+
 func (r *DSLReader) resetRedis() error {
 	if err := r.redis.FlushDB().Err(); err != nil {
 		return failure.Translate(err, appError.ErrRedisOperationFailed)
