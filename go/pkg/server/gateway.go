@@ -2,20 +2,34 @@ package server
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
+	"github.com/shibukazu/open-ve/go/pkg/config"
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type Gateway struct {}
+type Gateway struct {
+	httpConfig *config.HttpConfig
+	gRPCConfig *config.GRPCConfig
+	logger     *slog.Logger
+}
 
-func NewGateway() *Gateway {
-	return &Gateway{}
+func NewGateway(
+	httpConfig *config.HttpConfig,
+	gRPCConfig *config.GRPCConfig,
+	logger *slog.Logger,
+) *Gateway {
+	return &Gateway{
+		httpConfig: httpConfig,
+		gRPCConfig: gRPCConfig,
+		logger:     logger,
+	}
 }
 
 func (g *Gateway) Run(ctx context.Context) {
@@ -24,24 +38,23 @@ func (g *Gateway) Run(ctx context.Context) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	if err := pbValidate.RegisterValidateServiceHandlerFromEndpoint(ctx, grpcGateway, grpcEndpoint, opts); err != nil {
+	if err := pbValidate.RegisterValidateServiceHandlerFromEndpoint(ctx, grpcGateway, g.gRPCConfig.Addr, opts); err != nil {
 		panic(err)
 	}
 
-	if err := pbDSL.RegisterDSLServiceHandlerFromEndpoint(ctx, grpcGateway, grpcEndpoint, opts); err != nil {
+	if err := pbDSL.RegisterDSLServiceHandlerFromEndpoint(ctx, grpcGateway, g.gRPCConfig.Addr, opts); err != nil {
 		panic(err)
 	}
 
 	withCors := cors.New(cors.Options{
-		AllowedOrigins:  []string{"*"},
+		AllowedOrigins:   g.httpConfig.CORSAllowedOrigins,
+		AllowedHeaders:   g.httpConfig.CORSAllowedHeaders,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"ACCEPT", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
-	  }).Handler(grpcGateway)
+	}).Handler(grpcGateway)
 
-	if err := http.ListenAndServe(httpEndpoint, withCors); err != nil {
+	if err := http.ListenAndServe(g.httpConfig.Addr, withCors); err != nil {
 		panic(err)
 	}
 }

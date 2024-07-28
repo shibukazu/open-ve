@@ -1,71 +1,127 @@
-# open-ve
+# Open-VE: Centralized and Consistent Data Validation Engine
 
-Centralized and Consistent Data Validation Engine
+![GitHub Release](https://img.shields.io/github/v/release/shibukazu/open-ve)
+![GitHub License](https://img.shields.io/github/license/shibukazu/open-ve)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/shibukazu/open-ve)
+![GitHub Repo stars](https://img.shields.io/github/stars/shibukazu/open-ve)
 
-## Note
+A powerful solution that simplifies the management of validation rules, ensuring consistent validation across all layers, including frontend, BFF, and microservices, through a single, simple API.
 
-This project is still under development and not ready for production use.
+Open-VE offers an HTTP API and a gRPC API. We will provide a client SDK in the future.
 
-We only support limited CEL expression.
+> [!IMPORTANT]  
+> This project is still under development and not ready for production use.
 
-## Setup
+## Getting Started
 
 ### Config
 
-If you want to specify the configuration below, you can create a `config.yaml` file in the root directory of the project.
-If you don't specify the configuration, the default values will be used.
+You can overwrite the default configuration. Create a `config.yaml` file in the root directory of the project.
 
 ```yaml
+http:
+  addr: "localhost:8080"
+  cordAllowedOrigins: "*"
+  corsAllowedMethods: "*"
+grpc:
+  addr: "localhost:9000"
 redis:
   addr: "localhost:6379"
   password: ""
   db: 0
   poolSize: 10
+log:
+  level: "info"
 ```
 
 ### Run
 
 ```bash
-docker compose up -d
+docker compose up
 ```
 
-## Example
+## Example (HTTP API)
 
 ### Register Validation Rules
 
-You may need to install `grpcurl` and `yq` before running the command below.
-
-Save DSL below to a file named `local/dsl.yml`.
-
-```yaml
-validations:
-  - id: "price"
-    cel: "number % 3 == 0 || number < 5"
-    variables:
-      - name: "number"
-        type: "int"
-```
+Request:
 
 ```bash
-yq eval -o=json local/dsl.yml | grpcurl -plaintext -d @ localhost:9000 dsl.v1.DSLService/Register
+curl --request POST \
+  --url http://localhost:8080/v1/dsl \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "validations": [
+      {
+        "id": "price",
+        "cel": "number % 3 == 0 || number < 5",
+        "variables": [
+          {
+            "name": "number",
+            "type": "int"
+          }
+        ]
+      },
+    ]
+  }'
 ```
 
-### Read Validation Rules
+Response:
 
 ```bash
-grpcurl -plaintext -d '{}' localhost:9000 dsl.v1.DSLService/Read
+{}
 ```
 
-### Validate Data
+### Get Current Validation Rules
+
+Request:
 
 ```bash
-grpcurl -plaintext -d '{
-  "id": "price",
-  "variables": {
-    "number": {
-      "@type": "type.googleapis.com/google.protobuf.Int32Value",
-      "value": 3
+curl --request GET \
+  --url http://localhost:8080/v1/dsl \
+  --header 'Content-Type: application/json'
+```
+
+Response:
+
+```bash
+{
+	"validations": [
+		{
+			"id": "price",
+			"cel": "number % 3 == 0 || number < 5",
+			"variables": [
+				{
+					"name": "number",
+					"type": "int"
+				}
+			]
+		},
+	]
+}
+```
+
+### Validate
+
+Request:
+
+```bash
+curl --request POST \
+  --url 'http://localhost:8080/v1/check' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "id": "price",
+    "variables": {
+      "number": {
+        "@type": "type.googleapis.com/google.protobuf.Int64Value",
+        "value": 0
+      }
     }
-  }
-}' localhost:9000 validate.v1.ValidateService/Check
+  }'
+```
+
+Response:
+
+```bash
+{"isValid":false, "message":""}
 ```

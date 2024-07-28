@@ -2,10 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"net"
 
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
+	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl"
 	svcDSL "github.com/shibukazu/open-ve/go/pkg/services/dsl/v1"
 	svcValidate "github.com/shibukazu/open-ve/go/pkg/services/validate/v1"
@@ -17,26 +20,33 @@ import (
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
 )
 
-type Grpc struct {
-	dslReader *dsl.DSLReader
-	validator *validator.Validator
+type GRPC struct {
+	dslReader  *dsl.DSLReader
+	validator  *validator.Validator
+	gRPCConfig *config.GRPCConfig
+	logger     *slog.Logger
 }
 
-func NewGrpc(validator *validator.Validator, dslReader *dsl.DSLReader) *Grpc {
-	return &Grpc{
-		validator: validator,
-		dslReader: dslReader,
+func NewGrpc(
+	gRPCConfig *config.GRPCConfig,
+	logger *slog.Logger,
+	validator *validator.Validator, dslReader *dsl.DSLReader) *GRPC {
+	return &GRPC{
+		validator:  validator,
+		dslReader:  dslReader,
+		gRPCConfig: gRPCConfig,
+		logger:     logger,
 	}
 }
 
-func (g *Grpc) Run(ctx context.Context) {
+func (g *GRPC) Run(ctx context.Context) {
 
-	listen, err := net.Listen("tcp", grpcEndpoint)
+	listen, err := net.Listen("tcp", g.gRPCConfig.Addr)
 	if err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed))
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(g.accessLogInterceptor()))
 
 	validateService := svcValidate.NewService(ctx, g.validator)
 	pbValidate.RegisterValidateServiceServer(grpcServer, validateService)
@@ -51,4 +61,11 @@ func (g *Grpc) Run(ctx context.Context) {
 	}
 }
 
+func (g *GRPC) accessLogInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		g.logger.Info("🔍 Access Log", slog.String("Method", info.FullMethod), slog.String("Request", fmt.Sprintf("%+v", req)))
+		resp, err := handler(ctx, req)
 
+		return resp, err
+	}
+}

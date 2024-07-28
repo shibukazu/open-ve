@@ -1,6 +1,6 @@
 package appError
 
 const (
-	ErrConfigFileNotFound = "ConfigFileNotFound"
+	ErrConfigFileNotFound    = "ConfigFileNotFound"
 	ErrConfigFileSyntaxError = "ConfigFileSyntaxError"
 )
