@@ -15,7 +15,7 @@ services:
     container_name: server
     ports:
       - "8080:8080"
-      - "8081:8081"
+      - "9000:9000"
     networks:
       - default
     depends_on:
@@ -30,7 +30,7 @@ services:
       - ./openapi:/openapi
     restart: unless-stopped
     ports:
-      - "9000:8080"
+      - "18080:8080"
 
 volumes:
   redis-data:

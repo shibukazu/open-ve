@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/morikuni/failure/v2"
@@ -9,19 +10,31 @@ import (
 )
 
 type Config struct {
-	Redis  RedisConfig  `yaml:"redis"`
+	Http  HttpConfig  `yaml:"http"`
+	GRPC  GRPCConfig  `yaml:"grpc"`
+	Redis RedisConfig `yaml:"redis"`
+	Log   LogConfig   `yaml:"log"`
 }
 
 type HttpConfig struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Addr               string   `yaml:"addr"`
+	CORSAllowedOrigins []string `yaml:"corsAllowedOrigins"`
+	CORSAllowedHeaders []string `yaml:"corsAllowedHeaders"`
+}
+
+type GRPCConfig struct {
+	Addr string `yaml:"addr"`
 }
 
 type RedisConfig struct {
 	Addr     string `yaml:"addr"`
-	Password string `yaml:"password"`
+	Password string `yaml:"password" json:"-"`
 	DB       int    `yaml:"db"`
 	PoolSize int    `yaml:"poolSize"`
+}
+
+type LogConfig struct {
+	Level string `yaml:"level"`
 }
 
 func NewConfig() *Config {
@@ -32,7 +45,7 @@ func NewConfig() *Config {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// TODO warning
+			slog.Warn("config file not found, use default config")
 			return config
 		} else {
 			panic(failure.Unexpected(err.Error()))
@@ -46,13 +59,24 @@ func NewConfig() *Config {
 	return config
 }
 
-func defaultConfig () *Config {
+func defaultConfig() *Config {
 	return &Config{
+		Http: HttpConfig{
+			Addr:               "0.0.0.0:8080",
+			CORSAllowedOrigins: []string{"*"},
+			CORSAllowedHeaders: []string{"*"},
+		},
+		GRPC: GRPCConfig{
+			Addr: "0.0.0.0:9000",
+		},
 		Redis: RedisConfig{
 			Addr:     "redis:6379",
 			Password: "",
 			DB:       0,
 			PoolSize: 1000,
+		},
+		Log: LogConfig{
+			Level: "info",
 		},
 	}
 }

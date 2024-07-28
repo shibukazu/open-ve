@@ -20,19 +20,19 @@ func main() {
 	redis := redis.NewClient(&redis.Options{
 		Addr:     cfg.Redis.Addr,
 		Password: cfg.Redis.Password,
-		DB:      cfg.Redis.DB,
+		DB:       cfg.Redis.DB,
 		PoolSize: cfg.Redis.PoolSize,
 	})
 	dslReader := dsl.NewDSLReader(redis)
 	validator := validator.NewValidator(redis)
-	gw := server.NewGateway()
-	go func () {
+	gw := server.NewGateway(&cfg.Http, &cfg.GRPC)
+	go func() {
 		slog.Info("🚀gateway is running")
 		gw.Run(ctx)
 	}()
 
-	grpc := server.NewGrpc(validator, dslReader)
-	go func () {
+	grpc := server.NewGrpc(&cfg.GRPC, validator, dslReader)
+	go func() {
 		slog.Info("🚀grpc is running")
 		grpc.Run(ctx)
 	}()
