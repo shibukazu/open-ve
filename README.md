@@ -21,7 +21,7 @@ You can overwrite the default configuration. Create a `config.yaml` file in the 
 ```yaml
 http:
   addr: "localhost:8080"
-  cordAllowedOrigins: "*"
+  corsAllowedOrigins: "*"
   corsAllowedMethods: "*"
 grpc:
   addr: "localhost:9000"
