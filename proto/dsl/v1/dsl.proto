@@ -12,7 +12,7 @@ message Validation {
     (google.api.field_behavior) = REQUIRED,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"price\""}
   ];
-  string cel = 2 [
+  repeated string cels = 2 [
     (google.api.field_behavior) = REQUIRED,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"number % 3 == 0 || number < 5\""}
   ];

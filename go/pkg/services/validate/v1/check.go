@@ -15,12 +15,12 @@ func (s *Service) Check(ctx context.Context, req *pb.CheckRequest) (*pb.CheckRes
 	if err != nil {
 		return nil, appError.ToGRPCError(err)
 	}
-	is_valid, err := s.validator.Validate(req.Id, variables)
+	is_valid, msg, err := s.validator.Validate(req.Id, variables)
 	if err != nil {
 		return nil, appError.ToGRPCError(err)
 	}
 
-	return &pb.CheckResponse{IsValid: is_valid}, nil
+	return &pb.CheckResponse{IsValid: is_valid, Message: msg}, nil
 }
 
 func convertAnyMapToInterfaceMap(anyMap map[string]*anypb.Any) (map[string]interface{}, error) {

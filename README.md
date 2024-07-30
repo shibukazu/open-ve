@@ -51,14 +51,14 @@ Supported types:
 | `int`         | ✅      |                |
 | `uint`        | ✅      |                |
 | `double`      | ✅      |                |
-| `bool`        | ✅      | 　             |
-| `string`      | ✅      | 　             |
-| `bytes`       | ✅      | 　             |
-| `list`        |         | 　　 ✅        |
-| `map`         |         | 　 ✅          |
-| `null_type`   |         | 　 ❓          |
-| message names |         | 　 ❓          |
-| `type`        |         | 　 ❓          |
+| `bool`        | ✅      |                |
+| `string`      | ✅      |                |
+| `bytes`       | ✅      |                |
+| `list`        |         | ✅             |
+| `map`         |         | ✅             |
+| `null_type`   |         | ❓             |
+| message names |         | ❓             |
+| `type`        |         | ❓             |
 
 ## Example (HTTP API)
 
@@ -73,22 +73,29 @@ curl --request POST \
   --data '{
     "validations": [
       {
-        "id": "price",
-        "cel": "number % 3 == 0 || number < 5",
+        "id": "item",
+        "cels": [
+          "price > 0", # price must be greater than 0
+          "size(image) < 360" # image size must be less than 360 bytes
+        ],
         "variables": [
           {
-            "name": "number",
+            "name": "price",
             "type": "int"
+          },
+          {
+            "name": "image",
+            "type": "bytes"
           }
         ]
-      },
+      }
     ]
   }'
 ```
 
 Response:
 
-```bash
+```json
 {}
 ```
 
@@ -104,20 +111,24 @@ curl --request GET \
 
 Response:
 
-```bash
+```json
 {
-	"validations": [
-		{
-			"id": "price",
-			"cel": "number % 3 == 0 || number < 5",
-			"variables": [
-				{
-					"name": "number",
-					"type": "int"
-				}
-			]
-		},
-	]
+  "validations": [
+    {
+      "id": "item",
+      "cels": ["price > 0", "size(image) < 360"],
+      "variables": [
+        {
+          "name": "price",
+          "type": "int"
+        },
+        {
+          "name": "image",
+          "type": "bytes"
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -130,15 +141,18 @@ curl --request POST \
   --url 'http://localhost:8080/v1/check' \
   --header 'Content-Type: application/json' \
   --data '{
-    "id": "price",
+    "id": "item",
     "variables": {
-      "number": 0
+      "price": -100,
+      "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC"
     }
   }'
+}
+
 ```
 
 Response:
 
-```bash
-{"isValid":false, "message":""}
+```json
+{ "isValid": false, "message": "failed validations: price > 0" }
 ```

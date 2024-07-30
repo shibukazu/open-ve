@@ -1,6 +1,8 @@
 package appError
 
 import (
+	"fmt"
+
 	"github.com/morikuni/failure/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -44,9 +46,11 @@ func ToGRPCError(err error) error {
 }
 
 func getMessage(err error) string {
-	msg := failure.MessageOf(err)
-	if msg != "" {
-		return string(msg)
-	}
-	return "Error"
+	code := failure.CodeOf(err)
+	cause := failure.CauseOf(err)
+	additionalInfo := failure.MessageOf(err)
+	detail := fmt.Sprintf("%+v\n", err)
+	message := fmt.Sprintf("code: %s, cause: %s, additionalInfo: %s, detail: %s", code, cause, additionalInfo, detail)
+
+	return message
 }
