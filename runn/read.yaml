@@ -1,0 +1,35 @@
+desc: Read DSL`
+runners:
+  req: ${ENDPOINT}
+steps:
+- desc: Register DSL
+  req:
+    /v1/dsl:
+      post:
+        body:
+          application/json:
+            validations:
+            - cels:
+              - price > 0
+              - size(image) < 360
+              id: item
+              variables:
+              - name: price
+                type: int
+              - name: image
+                type: bytes
+- desc: Read DSL
+  req:
+    /v1/dsl:
+      get:
+        body:
+          application/json: null
+  test: |
+    current.res.status == 200
+    && current.res.body.validations[0].id == "item"
+    && current.res.body.validations[0].cels[0] == "price > 0"
+    && current.res.body.validations[0].cels[1] == "size(image) < 360"
+    && current.res.body.validations[0].variables[0].name == "price"
+    && current.res.body.validations[0].variables[0].type == "int"
+    && current.res.body.validations[0].variables[1].name == "image"
+    && current.res.body.validations[0].variables[1].type == "bytes"

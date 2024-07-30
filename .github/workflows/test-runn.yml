@@ -1,0 +1,34 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  api-test:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:19.03.12
+        options: --privileged
+    steps:
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.22.2
+      - name: "Install Deps"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+          go install github.com/k1LoW/runn/cmd/runn@latest
+      - name: "Start Server"
+        run: |
+          docker-compose up -d
+      - name: "Run runn"
+        run: |
+          export ENDPOINT=http://0.0.0.0:8080
+          make api-test
+      - name: "Stop Server"
+        run: |
+          docker-compose down
