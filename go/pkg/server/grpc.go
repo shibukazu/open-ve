@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"sync"
+	"time"
 
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
@@ -25,6 +27,7 @@ type GRPC struct {
 	validator  *validator.Validator
 	gRPCConfig *config.GRPCConfig
 	logger     *slog.Logger
+	server     *grpc.Server
 }
 
 func NewGrpc(
@@ -39,25 +42,52 @@ func NewGrpc(
 	}
 }
 
-func (g *GRPC) Run(ctx context.Context) {
+func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	listen, err := net.Listen("tcp", g.gRPCConfig.Addr)
 	if err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed))
 	}
 
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(g.accessLogInterceptor()))
+	g.server = grpc.NewServer(grpc.UnaryInterceptor(g.accessLogInterceptor()))
 
 	validateService := svcValidate.NewService(ctx, g.validator)
-	pbValidate.RegisterValidateServiceServer(grpcServer, validateService)
+	pbValidate.RegisterValidateServiceServer(g.server, validateService)
 
 	dslService := svcDSL.NewService(ctx, g.dslReader)
-	pbDSL.RegisterDSLServiceServer(grpcServer, dslService)
+	pbDSL.RegisterDSLServiceServer(g.server, dslService)
 
-	reflection.Register(grpcServer)
+	reflection.Register(g.server)
 
-	if err := grpcServer.Serve(listen); err != nil {
-		panic(failure.Translate(err, appError.ErrServerStartFailed))
+	go func() {
+		if err := g.server.Serve(listen); err != nil {
+			g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+		}
+	}()
+	g.logger.Info("🟢 grpc server is started")
+
+	// graceful shutdown
+	<-ctx.Done()
+
+	ctxShutDown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	g.shutdown(ctxShutDown)
+	wg.Done()
+}
+
+func (g *GRPC) shutdown(ctx context.Context) {
+	ok := make(chan struct{})
+	go func() {
+		g.server.GracefulStop()
+		close(ok)
+	}()
+
+	select {
+	case <-ctx.Done():
+		g.server.Stop()
+		g.logger.Error("🛑 grpc server is stopped by timeout")
+	case <-ok:
+		g.logger.Info("🛑 grpc server is stopped")
 	}
 }
 

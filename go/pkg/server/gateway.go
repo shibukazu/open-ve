@@ -7,6 +7,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/morikuni/failure/v2"
@@ -25,6 +27,7 @@ type Gateway struct {
 	gRPCConfig *config.GRPCConfig
 	logger     *slog.Logger
 	dslReader  *dsl.DSLReader
+	server     *http.Server
 }
 
 func NewGateway(
@@ -41,7 +44,7 @@ func NewGateway(
 	}
 }
 
-func (g *Gateway) Run(ctx context.Context) {
+func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 	grpcGateway := runtime.NewServeMux()
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -65,9 +68,32 @@ func (g *Gateway) Run(ctx context.Context) {
 		MaxAge:           300,
 	}).Handler(withMiddleware)
 
-	if err := http.ListenAndServe(g.httpConfig.Addr, withCors); err != nil {
-		panic(err)
+	g.server = &http.Server{
+		Addr:    g.httpConfig.Addr,
+		Handler: withCors,
 	}
+
+	go func() {
+		if err := g.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+		}
+	}()
+	g.logger.Info("🟢 gateway server is started")
+
+	// graceful shutdown
+	<-ctx.Done()
+
+	ctxShutDown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	g.shutdown(ctxShutDown)
+	wg.Done()
+}
+
+func (g *Gateway) shutdown(ctx context.Context) {
+	if err := g.server.Shutdown(ctx); err != nil {
+		g.logger.Error(failure.Translate(err, appError.ErrServerShutdownFailed).Error())
+	}
+	g.logger.Info("🛑 gateway server is stopped")
 }
 
 func (g *Gateway) validateRequestTypeConvertMiddleware(next http.Handler) http.Handler {

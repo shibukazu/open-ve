@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/go-redis/redis"
 	"github.com/shibukazu/open-ve/go/pkg/config"
@@ -12,7 +16,8 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, os.Kill)
 	defer cancel()
 
 	cfg := config.NewConfig()
@@ -30,16 +35,19 @@ func main() {
 	validator := validator.NewValidator(logger, redis)
 
 	gw := server.NewGateway(&cfg.Http, &cfg.GRPC, logger, dslReader)
-	go func() {
-		logger.Info("🚀 gateway is running")
-		gw.Run(ctx)
-	}()
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		logger.Info("🚀 gateway server is starting...")
+		gw.Run(ctx, wg)
+	}(wg)
 
 	grpc := server.NewGrpc(&cfg.GRPC, logger, validator, dslReader)
-	go func() {
-		logger.Info("🚀 grpc is running")
-		grpc.Run(ctx)
-	}()
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		logger.Info("🚀 grpc server is starting..")
+		grpc.Run(ctx, wg)
+	}(wg)
 
-	<-ctx.Done()
+	wg.Wait()
+	logger.Info("🛑 all server is stopped")
 }
