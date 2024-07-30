@@ -106,12 +106,13 @@
       "properties": {
         "id": {
           "type": "string",
-          "example": "price"
+          "example": "item"
         },
         "variables": {
           "type": "object",
           "example": {
-            "number": 100
+            "price": -100,
+            "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC"
           },
           "additionalProperties": {
             "$ref": "#/definitions/Any"
@@ -132,7 +133,7 @@
         },
         "message": {
           "type": "string",
-          "example": "price is too high"
+          "example": "failed validations: price \u003e 0"
         }
       },
       "required": [
@@ -172,17 +173,24 @@
       "properties": {
         "id": {
           "type": "string",
-          "example": "price"
+          "example": "item"
         },
         "cels": {
           "type": "array",
-          "example": "number % 3 == 0 || number \u003c 5",
+          "example": [
+            "price \u003e 0",
+            "size(image) \u003c 360"
+          ],
           "items": {
             "type": "string"
           }
         },
         "variables": {
           "type": "array",
+          "example": {
+            "price": "int",
+            "image": "bytes"
+          },
           "items": {
             "type": "object",
             "$ref": "#/definitions/Variable"
@@ -199,12 +207,10 @@
       "type": "object",
       "properties": {
         "name": {
-          "type": "string",
-          "example": "number"
+          "type": "string"
         },
         "type": {
-          "type": "string",
-          "example": "int"
+          "type": "string"
         }
       },
       "required": [

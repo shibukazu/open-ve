@@ -10,24 +10,21 @@ option go_package = "proto/dsl/v1";
 message Validation {
   string id = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"price\""}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"item\""}
   ];
   repeated string cels = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"number % 3 == 0 || number < 5\""}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "[\"price > 0\", \"size(image) < 360\"]"}
   ];
-  repeated Variable variables = 3 [(google.api.field_behavior) = REQUIRED];
+  repeated Variable variables = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "{\"price\": \"int\", \"image\": \"bytes\"}"}
+  ];
 }
 
 message Variable {
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"number\""}
-  ];
-  string type = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"int\""}
-  ];
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string type = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message RegisterRequest {
