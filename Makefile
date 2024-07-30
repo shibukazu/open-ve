@@ -20,11 +20,13 @@ RUNN_SCENARIO_FILES := $(shell find runn -name '*.yaml')
 
 all: test
 
-test: $(RUNN_SCENARIO_FILES)
+test: api-test
+
+api-test: $(RUNN_SCENARIO_FILES)
 	@echo "Running runn tests for $(ENDPOINT)"
 	@for file in $(RUNN_SCENARIO_FILES); do \
 		echo "Running test for $$file"; \
 		$(RUNN_CMD) $$file || exit 1; \
 	done
 
-.PHONY: all test
+.PHONY: all test api-test
