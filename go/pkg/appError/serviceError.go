@@ -46,12 +46,11 @@ func ToGRPCError(err error) error {
 }
 
 func getMessage(err error) string {
-	var message = ""
 	code := failure.CodeOf(err)
 	cause := failure.CauseOf(err)
 	additionalInfo := failure.MessageOf(err)
 	detail := fmt.Sprintf("%+v\n", err)
-	message = fmt.Sprintf("code: %s, cause: %s, additionalInfo: %s, detail: %s", code, cause, additionalInfo, detail)
+	message := fmt.Sprintf("code: %s, cause: %s, additionalInfo: %s, detail: %s", code, cause, additionalInfo, detail)
 
 	return message
 }
