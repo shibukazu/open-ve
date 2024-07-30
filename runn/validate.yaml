@@ -1,0 +1,48 @@
+desc: Valite Data`
+runners:
+  req: ${ENDPOINT}
+steps:
+- desc: Register DSL
+  req:
+    /v1/dsl:
+      post:
+        body:
+          application/json:
+            validations:
+            - id: item
+              cels:
+              - price > 0
+              - size(image) < 360
+              variables:
+              - name: price
+                type: int
+              - name: image
+                type: bytes
+- desc: Validate Data (InValid)
+  req:
+    /v1/check:
+      post:
+        body:
+          application/json:
+            id: item
+            variables:
+              price: -100
+              image: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC
+  test: |
+    current.res.status == 200
+    && current.res.body.isValid == false
+    && current.res.body.message == "failed validations: price > 0"
+- desc: Validate Data (Valid)
+  req:
+    /v1/check:
+      post:
+        body:
+          application/json:
+            id: item
+            variables:
+              price: 100
+              image: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC
+  test: |
+    current.res.status == 200
+    && current.res.body.isValid == true
+    && current.res.body.message == ""
