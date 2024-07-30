@@ -174,9 +174,12 @@
           "type": "string",
           "example": "price"
         },
-        "cel": {
-          "type": "string",
-          "example": "number % 3 == 0 || number \u003c 5"
+        "cels": {
+          "type": "array",
+          "example": "number % 3 == 0 || number \u003c 5",
+          "items": {
+            "type": "string"
+          }
         },
         "variables": {
           "type": "array",
@@ -188,7 +191,7 @@
       },
       "required": [
         "id",
-        "cel",
+        "cels",
         "variables"
       ]
     },

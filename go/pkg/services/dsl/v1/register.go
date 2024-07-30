@@ -9,8 +9,6 @@ import (
 	pb "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 )
 
-
-
 func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	dsl, err := toDSL(req)
 	if err != nil {
@@ -33,7 +31,7 @@ func toDSL(req *pb.RegisterRequest) (*dslPkg.DSL, error) {
 		if validation.Id == "" {
 			return nil, failure.New(appError.ErrDSLServiceDSLSyntaxError, failure.Messagef("Id is required"))
 		}
-		if validation.Cel == "" {
+		if validation.Cels == nil {
 			return nil, failure.New(appError.ErrDSLServiceDSLSyntaxError, failure.Messagef("Cel is required"))
 		}
 		if validation.Variables == nil {
@@ -41,7 +39,7 @@ func toDSL(req *pb.RegisterRequest) (*dslPkg.DSL, error) {
 		}
 		dsl.Validations[i] = dslPkg.Validation{
 			ID:        validation.Id,
-			Cel:       validation.Cel,
+			Cels:      validation.Cels,
 			Variables: make([]dslPkg.Variable, len(validation.Variables)),
 		}
 		for j, variable := range validation.Variables {

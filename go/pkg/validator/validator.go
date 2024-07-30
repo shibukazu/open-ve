@@ -1,7 +1,10 @@
 package validator
 
 import (
+	"encoding/json"
+	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/go-redis/redis"
 	"github.com/google/cel-go/cel"
@@ -21,46 +24,96 @@ func NewValidator(logger *slog.Logger, redis *redis.Client) *Validator {
 	return &Validator{redis: redis, logger: logger}
 }
 
-func (v *Validator) Validate(id string, variables map[string]interface{}) (bool, error) {
+func (v *Validator) Validate(id string, variables map[string]interface{}) (bool, string, error) {
 	dslVariablesID := dsl.GetVariablesID(id)
 	dslVariablesBytes, err := v.redis.Get(dslVariablesID).Bytes()
 	if err != nil {
-		return false, failure.Translate(err, appError.ErrValidateServiceIDNotFound, failure.Messagef("variables not found id: %s", id))
+		return false, "", failure.Translate(err, appError.ErrValidateServiceIDNotFound, failure.Messagef("variables not found id: %s", id))
 	}
 	dslVariables, err := dsl.DeserializeVariables(dslVariablesBytes)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 	celVariables, err := dsl.ToCELVariables(dslVariables)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	env, err := cel.NewEnv(celVariables...)
 	if err != nil {
-		return false, failure.Translate(err, appError.ErrCELSyantaxError)
+		return false, "", failure.Translate(err, appError.ErrCELSyantaxError)
 	}
 
 	dslAstID := dsl.GetASTID(id)
-	dslAstBytes, err := v.redis.Get(dslAstID).Bytes()
+	encodedAllASTBytes, err := v.redis.Get(dslAstID).Bytes()
 	if err != nil {
-		return false, failure.Translate(err, appError.ErrValidateServiceIDNotFound, failure.Messagef("ast not found id: %s", id))
+		return false, "", failure.Translate(err, appError.ErrValidateServiceIDNotFound, failure.Messagef("ast not found id: %s", id))
+	}
+	allASTBytes, err := decodeAllASTBytes(encodedAllASTBytes)
+	if err != nil {
+		return false, "", err
 	}
 
-	var expr exprpb.CheckedExpr
-	if err = proto.Unmarshal(dslAstBytes, &expr); err != nil {
-		return false, failure.Translate(err, appError.ErrCELSyantaxError)
+	successCh := make(chan bool, len(allASTBytes))
+	errorCh := make(chan error, len(allASTBytes))
+	failedCELCh := make(chan string, len(allASTBytes))
+	// execute all validation asynchronously
+	for _, astBytes := range allASTBytes {
+		go func(astBytes []byte) {
+			var expr exprpb.CheckedExpr
+			if err = proto.Unmarshal(astBytes, &expr); err != nil {
+				errorCh <- failure.Translate(err, appError.ErrDSLSyntaxError)
+				return
+			}
+
+			ast := cel.CheckedExprToAst(&expr)
+			prg, err := env.Program(ast)
+			if err != nil {
+				errorCh <- failure.Translate(err, appError.ErrCELSyantaxError)
+				return
+			}
+			res, _, err := prg.Eval(variables)
+			if err != nil {
+				errorCh <- failure.Translate(err, appError.ErrCELSyantaxError)
+				return
+			}
+
+			if !res.Value().(bool) {
+				failedCEL, err := cel.AstToString(ast)
+				if err != nil {
+					errorCh <- failure.Translate(err, appError.ErrCELSyantaxError)
+					return
+				}
+				failedCELCh <- failedCEL
+				return
+			}
+			successCh <- true
+		}(astBytes)
 	}
 
-	ast := cel.CheckedExprToAst(&expr)
-	prg, err := env.Program(ast)
-	if err != nil {
-		return false, failure.Translate(err, appError.ErrCELSyantaxError)
+	result := true
+	message := ""
+	var failedCELs []string
+	for i := 0; i < len(allASTBytes); i++ {
+		select {
+		case err := <-errorCh:
+			return false, "", err
+		case failedCEL := <-failedCELCh:
+			result = false
+			failedCELs = append(failedCELs, failedCEL)
+		case <-successCh:
+		}
 	}
-	res, _, err := prg.Eval(variables)
-	if err != nil {
-		return false, failure.Translate(err, appError.ErrCELSyantaxError)
+	if len(failedCELs) != 0 {
+		message = fmt.Sprintf("failed validations: %s", strings.Join(failedCELs, ", "))
 	}
+	return result, message, nil
+}
 
-	return res.Value().(bool), nil
+func decodeAllASTBytes(bytes []byte) ([][]byte, error) {
+	var allASTBytes [][]byte
+	if err := json.Unmarshal(bytes, &allASTBytes); err != nil {
+		return nil, failure.Translate(err, appError.ErrDSLSyntaxError)
+	}
+	return allASTBytes, nil
 }

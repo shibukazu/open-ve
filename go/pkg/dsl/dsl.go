@@ -39,7 +39,7 @@ func (v *Variable) parseVariable() (cel.EnvOption, error) {
 
 type Validation struct {
 	ID        string     `yaml:"id" json:"id"`
-	Cel       string     `yaml:"cel" json:"cel"`
+	Cels      []string   `yaml:"cels" json:"cels"`
 	Variables []Variable `yaml:"variables" json:"variables"`
 }
 
@@ -173,24 +173,45 @@ func (r *DSLReader) parseAndSaveDSL(dsl *DSL) error {
 		if err != nil {
 			return failure.Translate(err, appError.ErrCELSyantaxError)
 		}
-		ast, issues := env.Compile(v.Cel)
-		if issues != nil && issues.Err() != nil {
-			return failure.Translate(issues.Err(), appError.ErrCELSyantaxError)
+
+		allASTBytes := make([][]byte, 0, len(v.Cels))
+		for _, inputCel := range v.Cels {
+			ast, issues := env.Compile(inputCel)
+			if issues != nil && issues.Err() != nil {
+				return failure.Translate(issues.Err(), appError.ErrCELSyantaxError)
+			}
+
+			// Convert AST to Proto
+			expr, err := cel.AstToCheckedExpr(ast)
+			if err != nil {
+				return failure.Translate(err, appError.ErrCELSyantaxError)
+			}
+			astBytes, err := proto.Marshal(expr)
+			if err != nil {
+				return failure.Translate(err, appError.ErrCELSyantaxError)
+			}
+			allASTBytes = append(allASTBytes, astBytes)
 		}
-		// Convert AST to Proto
-		expr, err := cel.AstToCheckedExpr(ast)
+
+		encodedAllASTBytes, err := encodeAllASTBytes(allASTBytes)
 		if err != nil {
-			return failure.Translate(err, appError.ErrCELSyantaxError)
+			return err
 		}
-		astBytes, err := proto.Marshal(expr)
-		if err != nil {
-			return failure.Translate(err, appError.ErrCELSyantaxError)
-		}
+
 		// Save AST to Redis
-		if err := r.redis.Set(GetASTID(v.ID), astBytes, 0).Err(); err != nil {
+		if err := r.redis.Set(GetASTID(v.ID), encodedAllASTBytes, 0).Err(); err != nil {
 			return failure.Translate(err, appError.ErrRedisOperationFailed)
 		}
 	}
 
 	return nil
+}
+
+func encodeAllASTBytes(allASTBytes [][]byte) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	if err := enc.Encode(allASTBytes); err != nil {
+		return nil, failure.Translate(err, appError.ErrDSLSyntaxError)
+	}
+	return buf.Bytes(), nil
 }
