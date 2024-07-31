@@ -9,25 +9,28 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 option go_package = "proto/validate/v1";
 
 message CheckRequest {
-  string id = 1 [
+  repeated Validation validations = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"item\""}
-  ];
-  map<string, google.protobuf.Any> variables = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "{\"price\": -100, \"image\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC\"}"}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "[{\"id\": \"item\", \"variables\": {\"price\": -100, \"image\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC\"}}]"}
   ];
 }
 
+message Validation {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  map<string, google.protobuf.Any> variables = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
 message CheckResponse {
-  bool is_valid = 1 [
+  repeated ValidationResult results = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "false"}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "[{\"id\": \"item\", \"is_valid\": false, \"message\": \"failed validations: price > 0\"}]"}
   ];
-  string message = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {example: "\"failed validations: price > 0\""}
-  ];
+}
+
+message ValidationResult {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  bool is_valid = 2 [(google.api.field_behavior) = REQUIRED];
+  string message = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 service ValidateService {

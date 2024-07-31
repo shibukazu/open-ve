@@ -88,7 +88,19 @@ curl --request POST \
             "type": "bytes"
           }
         ]
-      }
+      },
+      {
+        "id": "user",
+        "cels": [
+          "size(name) < 20" # name length must be less than 20
+        ],
+        "variables": [
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+		 }
     ]
   }'
 ```
@@ -127,6 +139,16 @@ Response:
           "type": "bytes"
         }
       ]
+    },
+    {
+      "id": "user",
+      "cels": ["size(name) < 20"],
+      "variables": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
     }
   ]
 }
@@ -141,18 +163,40 @@ curl --request POST \
   --url 'http://localhost:8080/v1/check' \
   --header 'Content-Type: application/json' \
   --data '{
-    "id": "item",
-    "variables": {
-      "price": -100,
-      "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC"
-    }
+    "validations": [
+      {
+        "id": "item",
+        "variables": {
+          "price": -100,
+          "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC" # send base64 encoded image
+        }
+      },
+      {
+        "id": "user",
+        "variables": {
+          "name": "longlonglonglongname"
+        }
+      }
+    ]
   }'
-}
 
 ```
 
 Response:
 
 ```json
-{ "isValid": false, "message": "failed validations: price > 0" }
+{
+  "results": [
+    {
+      "id": "item",
+      "isValid": false,
+      "message": "failed validations: price > 0"
+    },
+    {
+      "id": "user",
+      "isValid": false,
+      "message": "failed validations: size(name) < 20"
+    }
+  ]
+}
 ```

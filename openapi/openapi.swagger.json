@@ -104,41 +104,47 @@
     "CheckRequest": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "example": "item"
-        },
-        "variables": {
-          "type": "object",
-          "example": {
-            "price": -100,
-            "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC"
-          },
-          "additionalProperties": {
-            "$ref": "#/definitions/Any"
+        "validations": {
+          "type": "array",
+          "example": [
+            {
+              "id": "item",
+              "variables": {
+                "price": -100,
+                "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC"
+              }
+            }
+          ],
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/validate.v1.Validation"
           }
         }
       },
       "required": [
-        "id",
-        "variables"
+        "validations"
       ]
     },
     "CheckResponse": {
       "type": "object",
       "properties": {
-        "isValid": {
-          "type": "boolean",
-          "example": false
-        },
-        "message": {
-          "type": "string",
-          "example": "failed validations: price \u003e 0"
+        "results": {
+          "type": "array",
+          "example": [
+            {
+              "id": "item",
+              "is_valid": false,
+              "message": "failed validations: price \u003e 0"
+            }
+          ],
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ValidationResult"
+          }
         }
       },
       "required": [
-        "isValid",
-        "message"
+        "results"
       ]
     },
     "ReadResponse": {
@@ -148,7 +154,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "$ref": "#/definitions/Validation"
+            "$ref": "#/definitions/dsl.v1.Validation"
           }
         }
       }
@@ -160,7 +166,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "$ref": "#/definitions/Validation"
+            "$ref": "#/definitions/dsl.v1.Validation"
           }
         }
       }
@@ -168,7 +174,41 @@
     "RegisterResponse": {
       "type": "object"
     },
-    "Validation": {
+    "ValidationResult": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "isValid": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "isValid",
+        "message"
+      ]
+    },
+    "Variable": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ]
+    },
+    "dsl.v1.Validation": {
       "type": "object",
       "properties": {
         "id": {
@@ -203,19 +243,22 @@
         "variables"
       ]
     },
-    "Variable": {
+    "validate.v1.Validation": {
       "type": "object",
       "properties": {
-        "name": {
+        "id": {
           "type": "string"
         },
-        "type": {
-          "type": "string"
+        "variables": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Any"
+          }
         }
       },
       "required": [
-        "name",
-        "type"
+        "id",
+        "variables"
       ]
     }
   }

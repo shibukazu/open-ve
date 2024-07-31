@@ -11,16 +11,21 @@ import (
 )
 
 func (s *Service) Check(ctx context.Context, req *pb.CheckRequest) (*pb.CheckResponse, error) {
-	variables, err := convertAnyMapToInterfaceMap(req.Variables)
-	if err != nil {
-		return nil, appError.ToGRPCError(err)
-	}
-	is_valid, msg, err := s.validator.Validate(req.Id, variables)
-	if err != nil {
-		return nil, appError.ToGRPCError(err)
+	results := make([]*pb.ValidationResult, 0, len(req.Validations))
+
+	for _, validation := range req.Validations {
+		variables, err := convertAnyMapToInterfaceMap(validation.Variables)
+		if err != nil {
+			return nil, appError.ToGRPCError(err)
+		}
+		is_valid, msg, err := s.validator.Validate(validation.Id, variables)
+		if err != nil {
+			return nil, appError.ToGRPCError(err)
+		}
+		results = append(results, &pb.ValidationResult{Id: validation.Id, IsValid: is_valid, Message: msg})
 	}
 
-	return &pb.CheckResponse{IsValid: is_valid, Message: msg}, nil
+	return &pb.CheckResponse{Results: results}, nil
 }
 
 func convertAnyMapToInterfaceMap(anyMap map[string]*anypb.Any) (map[string]interface{}, error) {
