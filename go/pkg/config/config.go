@@ -17,13 +17,15 @@ type Config struct {
 }
 
 type HttpConfig struct {
-	Addr               string   `yaml:"addr"`
-	CORSAllowedOrigins []string `yaml:"corsAllowedOrigins"`
-	CORSAllowedHeaders []string `yaml:"corsAllowedHeaders"`
+	Addr               string    `yaml:"addr"`
+	CORSAllowedOrigins []string  `yaml:"corsAllowedOrigins"`
+	CORSAllowedHeaders []string  `yaml:"corsAllowedHeaders"`
+	TLS                TLSConfig `yaml:"tls"`
 }
 
 type GRPCConfig struct {
-	Addr string `yaml:"addr"`
+	Addr string    `yaml:"addr"`
+	TLS  TLSConfig `yaml:"tls"`
 }
 
 type RedisConfig struct {
@@ -35,6 +37,12 @@ type RedisConfig struct {
 
 type LogConfig struct {
 	Level string `yaml:"level"`
+}
+
+type TLSConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	CertPath string `yaml:"certPath"`
+	KeyPath  string `yaml:"keyPath"`
 }
 
 func NewConfig() *Config {
@@ -62,12 +70,18 @@ func NewConfig() *Config {
 func defaultConfig() *Config {
 	return &Config{
 		Http: HttpConfig{
-			Addr:               "0.0.0.0:8080",
+			Addr:               ":8080",
 			CORSAllowedOrigins: []string{"*"},
 			CORSAllowedHeaders: []string{"*"},
+			TLS: TLSConfig{
+				Enabled: false,
+			},
 		},
 		GRPC: GRPCConfig{
-			Addr: "0.0.0.0:9000",
+			Addr: ":9000",
+			TLS: TLSConfig{
+				Enabled: false,
+			},
 		},
 		Redis: RedisConfig{
 			Addr:     "redis:6379",

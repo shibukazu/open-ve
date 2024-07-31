@@ -37,17 +37,17 @@ func main() {
 	gw := server.NewGateway(&cfg.Http, &cfg.GRPC, logger, dslReader)
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
-		logger.Info("🚀 gateway server is starting...")
+		logger.Info("🚀 gateway server: starting...")
 		gw.Run(ctx, wg)
 	}(wg)
 
 	grpc := server.NewGrpc(&cfg.GRPC, logger, validator, dslReader)
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
-		logger.Info("🚀 grpc server is starting..")
+		logger.Info("🚀 grpc server: starting..")
 		grpc.Run(ctx, wg)
 	}(wg)
 
 	wg.Wait()
-	logger.Info("🛑 all server is stopped")
+	logger.Info("🛑 all server: stopped")
 }

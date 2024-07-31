@@ -20,16 +20,20 @@ You can overwrite the default configuration. Create a `config.yaml` file in the 
 
 ```yaml
 http:
-  addr: "localhost:8080"
-  corsAllowedOrigins: "*"
-  corsAllowedMethods: "*"
+  addr: ":8080"
+  corsAllowedOrigins: ["*"]
+  corsAllowedHeaders: ["*"]
+  tls:
+    enabled: false
 grpc:
-  addr: "localhost:9000"
+  addr: ":9000"
+  tls:
+    enabled: false
 redis:
-  addr: "localhost:6379"
+  addr: "redis:6379"
   password: ""
   db: 0
-  poolSize: 10
+  poolSize: 1000
 log:
   level: "info"
 ```
