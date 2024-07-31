@@ -2,22 +2,28 @@ desc: Register DSL`
 runners:
   req: ${ENDPOINT}
 steps:
-- desc: Register DSL
-  req:
-    /v1/dsl:
-      post:
-        body:
-          application/json:
-            validations:
-            - cels:
-              - price > 0
-              - size(image) < 360
-              id: item
-              variables:
-              - name: price
-                type: int
-              - name: image
-                type: bytes
-  test: |
-    current.res.status == 200
-    && current.res.body == {}
+  - desc: Register DSL
+    req:
+      /v1/dsl:
+        post:
+          body:
+            application/json:
+              validations:
+                - cels:
+                    - price > 0
+                    - size(image) < 360
+                  id: item
+                  variables:
+                    - name: price
+                      type: int
+                    - name: image
+                      type: bytes
+                - cels:
+                    - size(name) < 20
+                  id: user
+                  variables:
+                    - name: name
+                      type: string
+    test: |
+      current.res.status == 200
+      && current.res.body == {}

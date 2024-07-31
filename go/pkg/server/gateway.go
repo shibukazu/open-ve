@@ -105,39 +105,56 @@ func (g *Gateway) validateRequestTypeConvertMiddleware(next http.Handler) http.H
 				return
 			}
 
-			id, ok := body["id"].(string)
+			validations, ok := body["validations"].([]interface{})
 			if !ok {
-				http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("id field is invalid")).Error(), http.StatusBadRequest)
+				http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validations field is invalid")).Error(), http.StatusBadRequest)
 				return
 			}
 
-			variables, ok := body["variables"].(map[string]interface{})
-			if !ok {
-				http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("variables field is invalid")).Error(), http.StatusBadRequest)
-				return
-			}
-
-			variableNameToCELType, err := g.dslReader.GetVariableNameToCELType(context.Background(), id)
-			if err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusBadRequest)
-				return
-			}
-
-			convertedVariables := make(map[string]interface{}, len(variables))
-			for key, value := range variables {
-				celType := variableNameToCELType[key]
-				convertedType, err := convertCELTypeToGoogleProtobufType(celType)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+			for idx, validation := range validations {
+				validation, ok := validation.(map[string]interface{})
+				if !ok {
+					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validation field is invalid")).Error(), http.StatusBadRequest)
 					return
 				}
-				variable := make(map[string]interface{}, 2)
-				variable["@type"] = convertedType
-				variable["value"] = value
 
-				convertedVariables[key] = variable
+				id, ok := validation["id"].(string)
+				if !ok {
+					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("id field is invalid")).Error(), http.StatusBadRequest)
+					return
+				}
+
+				variables, ok := validation["variables"].(map[string]interface{})
+				if !ok {
+					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("variables field is invalid")).Error(), http.StatusBadRequest)
+					return
+				}
+
+				variableNameToCELType, err := g.dslReader.GetVariableNameToCELType(context.Background(), id)
+				if err != nil {
+					http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusBadRequest)
+					return
+				}
+
+				convertedVariables := make(map[string]interface{}, len(variables))
+				for key, value := range variables {
+					celType := variableNameToCELType[key]
+					convertedType, err := convertCELTypeToGoogleProtobufType(celType)
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusBadRequest)
+						return
+					}
+					variable := make(map[string]interface{}, 2)
+					variable["@type"] = convertedType
+					variable["value"] = value
+
+					convertedVariables[key] = variable
+				}
+				validation["variables"] = convertedVariables
+
+				validations[idx] = validation
 			}
-			body["variables"] = convertedVariables
+			body["validations"] = validations
 			convertedBody, err := json.Marshal(body)
 			if err != nil {
 				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusInternalServerError)
