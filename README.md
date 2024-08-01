@@ -16,7 +16,31 @@ Open-VE offers an HTTP API and a gRPC API. We will provide a client SDK in the f
 
 ### Config
 
-You can overwrite the default configuration. Create a `config.yaml` file in the root directory of the project.
+#### 1. CLI Flags or Environment Variables
+
+| CLI Args                      | Env                                 | Default      | Desc                      |
+| ----------------------------- | ----------------------------------- | ------------ | ------------------------- |
+| `--http-addr`                 | `OPEN-VE_HTTP_ADDR`                 | `:8080`      | HTTP server address       |
+| `--http-cors-allowed-origins` | `OPEN-VE_HTTP_CORS_ALLOWED_ORIGINS` | `["*"]`      | CORS allowed origins      |
+| `--http-cors-allowed-headers` | `OPEN-VE_HTTP_CORS_ALLOWED_HEADERS` | `["*"]`      | CORS allowed headers      |
+| `--http-tls-enabled`          | `OPEN-VE_HTTP_TLS_ENABLED`          | `false`      | HTTP server TLS enabled   |
+| `--http-tls-cert-path`        | `OPEN-VE_HTTP_TLS_CERT_PATH`        | `""`         | HTTP server TLS cert path |
+| `--http-tls-key-path`         | `OPEN-VE_HTTP_TLS_KEY_PATH`         | `""`         | HTTP server TLS key path  |
+| `--grpc-addr`                 | `OPEN-VE_GRPC_ADDR`                 | `:9000`      | gRPC server address       |
+| `--grpc-tls-enabled`          | `OPEN-VE_GRPC_TLS_ENABLED`          | `false`      | gRPC server TLS enabled   |
+| `--grpc-tls-cert-path`        | `OPEN-VE_GRPC_TLS_CERT_PATH`        | `""`         | gRPC server TLS cert path |
+| `--grpc-tls-key-path`         | `OPEN-VE_GRPC_TLS_KEY_PATH`         | `""`         | gRPC server TLS key path  |
+| `--redis-addr`                | `OPEN-VE_REDIS_ADDR`                | `redis:6379` | Redis address             |
+| `--redis-password`            | `OPEN-VE_REDIS_PASSWORD`            | `""`         | Redis password            |
+| `--redis-db`                  | `OPEN-VE_REDIS_DB`                  | `0`          | Redis DB                  |
+| `--redis-pool-size`           | `OPEN-VE_REDIS_POOL_SIZE`           | `1000`       | Redis pool size           |
+| `--log-level`                 | `OPEN-VE_LOG_LEVEL`                 | `info`       | Log level                 |
+
+#### 2. Config File
+
+You can also use a config file in YAML format.
+
+Place the `config.yaml` in the same directory or `$HOME/.open-ve/config.yaml`.
 
 ```yaml
 http:
@@ -25,10 +49,14 @@ http:
   corsAllowedHeaders: ["*"]
   tls:
     enabled: false
+    certPath: ""
+    keyPath: ""
 grpc:
   addr: ":9000"
   tls:
     enabled: false
+    certPath: ""
+    keyPath: ""
 redis:
   addr: "redis:6379"
   password: ""
@@ -40,8 +68,20 @@ log:
 
 ### Run
 
+#### 1. Build From Source
+
+> [!NOTE]  
+> You need to prepare a Redis server and set the address in the config.
+
 ```bash
-docker compose up
+go build -o open-ve go/cmd/open-ve/main.go
+./open-ve run --redis-addr=
+```
+
+#### 2. Docker Compose
+
+```bash
+docker-compose up
 ```
 
 ## CEL
