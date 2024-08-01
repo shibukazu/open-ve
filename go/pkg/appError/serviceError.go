@@ -11,7 +11,6 @@ import (
 const (
 	ErrYAMLSyntaxError      = "YAMLSyntaxError"
 	ErrDSLSyntaxError       = "DSLSyntaxError"
-	ErrDSLNotFound          = "DSLNotFound"
 	ErrRedisOperationFailed = "RedisOperationFailed"
 	ErrCELSyantaxError      = "CELSyantaxError"
 
@@ -20,6 +19,8 @@ const (
 	ErrValidateServiceIDNotFound = "ValidateServiceIDNotFound"
 
 	ErrDSLServiceDSLSyntaxError = "DSLServiceDSLSyntaxError"
+
+	ErrInternalError = "Internal"
 )
 
 func ToGRPCError(err error) error {
@@ -39,6 +40,8 @@ func ToGRPCError(err error) error {
 		code = codes.NotFound
 	case ErrDSLServiceDSLSyntaxError:
 		code = codes.InvalidArgument
+	case ErrInternalError:
+		code = codes.Internal
 	default:
 		code = codes.Unknown
 	}

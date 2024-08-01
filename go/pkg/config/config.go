@@ -3,7 +3,7 @@ package config
 type Config struct {
 	Http  HttpConfig  `yaml:"http"`
 	GRPC  GRPCConfig  `yaml:"grpc"`
-	Redis RedisConfig `yaml:"redis"`
+	Store StoreConfig `yaml:"store"`
 	Log   LogConfig   `yaml:"log"`
 }
 
@@ -24,6 +24,11 @@ type RedisConfig struct {
 	Password string `yaml:"password" json:"-"`
 	DB       int    `yaml:"db"`
 	PoolSize int    `yaml:"poolSize"`
+}
+
+type StoreConfig struct {
+	Engine string      `yaml:"engine"`
+	Redis  RedisConfig `yaml:"redis"`
 }
 
 type LogConfig struct {
@@ -52,11 +57,14 @@ func DefaultConfig() *Config {
 				Enabled: false,
 			},
 		},
-		Redis: RedisConfig{
-			Addr:     "redis:6379",
-			Password: "",
-			DB:       0,
-			PoolSize: 1000,
+		Store: StoreConfig{
+			Engine: "memory",
+			Redis: RedisConfig{
+				Addr:     "redis:6379",
+				Password: "",
+				DB:       0,
+				PoolSize: 1000,
+			},
 		},
 		Log: LogConfig{
 			Level: "info",

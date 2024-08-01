@@ -19,16 +19,11 @@ jobs:
           go-version: 1.22.2
       - name: "Install Deps"
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
           go install github.com/k1LoW/runn/cmd/runn@latest
       - name: "Start Server"
         run: |
-          docker-compose up -d
+          go run go/cmd/open-ve/main.go run --http-addr=:8080 &
       - name: "Run runn"
         run: |
           export ENDPOINT=http://0.0.0.0:8080
           make api-test
-      - name: "Stop Server"
-        run: |
-          docker-compose down
