@@ -21,6 +21,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
+          go mod download
           go install github.com/k1LoW/runn/cmd/runn@latest
       - name: "Start Server"
         run: |
