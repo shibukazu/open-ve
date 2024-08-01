@@ -71,14 +71,21 @@ log:
 
 ### Run
 
-#### 1. Build From Source
+#### 1. brew
+
+```bash
+brew install shibukazu/tap/open-ve
+open-ve run
+```
+
+#### 2. Build From Source
 
 ```bash
 go build -o open-ve go/cmd/open-ve/main.go
 ./open-ve run
 ```
 
-#### 2. Docker Compose
+#### 3. Docker Compose
 
 ```bash
 docker-compose up
