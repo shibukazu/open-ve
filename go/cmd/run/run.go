@@ -36,40 +36,40 @@ func NewRunCommand() *cobra.Command {
 	viper.BindEnv("http.addr", "OPEN-VE_HTTP_ADDR")
 
 	flags.StringSlice("http-cors-allowed-origins", defaultConfig.Http.CORSAllowedOrigins, "CORS allowed origins")
-	viper.BindPFlag("http.cors-allowed-origins", flags.Lookup("http-cors-allowed-origins"))
-	viper.BindEnv("http.cors-allowed-origins", "OPEN-VE_HTTP_CORS_ALLOWED_ORIGINS")
+	viper.BindPFlag("http.corsAllowedOrigins", flags.Lookup("http-cors-allowed-origins"))
+	viper.BindEnv("http.corsAllowedOrigins", "OPEN-VE_HTTP_CORS_ALLOWED_ORIGINS")
 
 	flags.StringSlice("http-cors-allowed-headers", defaultConfig.Http.CORSAllowedHeaders, "CORS allowed headers")
-	viper.BindPFlag("http.cors-allowed-headers", flags.Lookup("http-cors-allowed-headers"))
-	viper.BindEnv("http.cors-allowed-headers", "OPEN-VE_HTTP_CORS_ALLOWED_HEADERS")
+	viper.BindPFlag("http.corsAllowedHeaders", flags.Lookup("http-cors-allowed-headers"))
+	viper.BindEnv("http.corsAllowedHeaders", "OPEN-VE_HTTP_CORS_ALLOWED_HEADERS")
 
 	flags.Bool("http-tls-enabled", defaultConfig.Http.TLS.Enabled, "HTTP server TLS enabled")
-	viper.BindPFlag("http.tls-enabled", flags.Lookup("http-tls-enabled"))
-	viper.BindEnv("http.tls-enabled", "OPEN-VE_HTTP_TLS_ENABLED")
+	viper.BindPFlag("http.tls.enabled", flags.Lookup("http-tls-enabled"))
+	viper.BindEnv("http.tls.enabled", "OPEN-VE_HTTP_TLS_ENABLED")
 
 	flags.String("http-tls-cert-path", defaultConfig.Http.TLS.CertPath, "HTTP server TLS cert path")
-	viper.BindPFlag("http.tls-cert-path", flags.Lookup("http-tls-cert-path"))
-	viper.BindEnv("http.tls-cert-path", "OPEN-VE_HTTP_TLS_CERT_PATH")
+	viper.BindPFlag("http.tls.certPath", flags.Lookup("http-tls-cert-path"))
+	viper.BindEnv("http.tls.certPath", "OPEN-VE_HTTP_TLS_CERT_PATH")
 
 	flags.String("http-tls-key-path", defaultConfig.Http.TLS.KeyPath, "HTTP server TLS key path")
-	viper.BindPFlag("http.tls-key-path", flags.Lookup("http-tls-key-path"))
-	viper.BindEnv("http.tls-key-path", "OPEN-VE_HTTP_TLS_KEY_PATH")
+	viper.BindPFlag("http.tls.keyPath", flags.Lookup("http-tls-key-path"))
+	viper.BindEnv("http.tls.keyPath", "OPEN-VE_HTTP_TLS_KEY_PATH")
 	// GRPC
 	flags.String("grpc-addr", defaultConfig.GRPC.Addr, "gRPC server address")
 	viper.BindPFlag("grpc.addr", flags.Lookup("grpc-addr"))
 	viper.BindEnv("grpc.addr", "OPEN-VE_GRPC_ADDR")
 
 	flags.Bool("grpc-tls-enabled", defaultConfig.GRPC.TLS.Enabled, "gRPC server TLS enabled")
-	viper.BindPFlag("grpc.tls-enabled", flags.Lookup("grpc-tls-enabled"))
-	viper.BindEnv("grpc.tls-enabled", "OPEN-VE_GRPC_TLS_ENABLED")
+	viper.BindPFlag("grpc.tls.enabled", flags.Lookup("grpc-tls-enabled"))
+	viper.BindEnv("grpc.tls.enabled", "OPEN-VE_GRPC_TLS_ENABLED")
 
 	flags.String("grpc-tls-cert-path", defaultConfig.GRPC.TLS.CertPath, "gRPC server TLS cert path")
-	viper.BindPFlag("grpc.tls-cert-path", flags.Lookup("grpc-tls-cert-path"))
-	viper.BindEnv("grpc.tls-cert-path", "OPEN-VE_GRPC_TLS_CERT_PATH")
+	viper.BindPFlag("grpc.tls.certPath", flags.Lookup("grpc-tls-cert-path"))
+	viper.BindEnv("grpc.tls.certPath", "OPEN-VE_GRPC_TLS_CERT_PATH")
 
 	flags.String("grpc-tls-key-path", defaultConfig.GRPC.TLS.KeyPath, "gRPC server TLS key path")
-	viper.BindPFlag("grpc.tls-key-path", flags.Lookup("grpc-tls-key-path"))
-	viper.BindEnv("grpc.tls-key-path", "OPEN-VE_GRPC_TLS_KEY_PATH")
+	viper.BindPFlag("grpc.tls.keyPath", flags.Lookup("grpc-tls-key-path"))
+	viper.BindEnv("grpc.tls.keyPath", "OPEN-VE_GRPC_TLS_KEY_PATH")
 	// Redis
 	flags.String("redis-addr", defaultConfig.Redis.Addr, "Redis address")
 	viper.BindPFlag("redis.addr", flags.Lookup("redis-addr"))
@@ -84,8 +84,8 @@ func NewRunCommand() *cobra.Command {
 	viper.BindEnv("redis.db", "OPEN-VE_REDIS_DB")
 
 	flags.Int("redis-pool-size", defaultConfig.Redis.PoolSize, "Redis pool size")
-	viper.BindPFlag("redis.pool-size", flags.Lookup("redis-pool-size"))
-	viper.BindEnv("redis.pool-size", "OPEN-VE_REDIS_POOL_SIZE")
+	viper.BindPFlag("redis.poolSize", flags.Lookup("redis-pool-size"))
+	viper.BindEnv("redis.poolSize", "OPEN-VE_REDIS_POOL_SIZE")
 	// Log
 	flags.String("log-level", defaultConfig.Log.Level, "Log level")
 	viper.BindPFlag("log.level", flags.Lookup("log-level"))
