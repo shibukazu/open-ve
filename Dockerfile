@@ -3,10 +3,10 @@ FROM golang:1.22.2-bullseye as builder
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        wget \
-        make \
-        unzip \
-        git \
+    wget \
+    make \
+    unzip \
+    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -28,7 +28,7 @@ RUN go mod download && go mod verify
 
 COPY . ./
 
-RUN go build -o /openve ./go/cmd
+RUN go build -o /openve ./go/cmd/open-ve
 
 
 
@@ -37,4 +37,4 @@ FROM debian:bullseye-slim as runner
 
 COPY --from=builder /openve /openve
 
-CMD ["/openve"]
+CMD ["/openve", "run"]

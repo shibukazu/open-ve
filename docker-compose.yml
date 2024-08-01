@@ -20,6 +20,22 @@ services:
       - default
     depends_on:
       - redis
+    environment:
+      - OPEN-VE_HTTP_ADDR=
+      - OPEN-VE_HTTP_CORS_ALLOWED_ORIGINS=
+      - OPEN-VE_HTTP_CORS_ALLOWED_HEADERS=
+      - OPEN-VE_HTTP_TLS_ENABLED=
+      - OPEN-VE_HTTP_TLS_CERT_PATH=
+      - OPEN-VE_HTTP_TLS_KEY_PATH=
+      - OPEN-VE_GRPC_ADDR=
+      - OPEN-VE_GRPC_TLS_ENABLED=
+      - OPEN-VE_GRPC_TLS_CERT_PATH=
+      - OPEN-VE_GRPC_TLS_KEY_PATH=
+      - OPEN-VE_REDIS_ADDR=
+      - OPEN-VE_REDIS_PASSWORD=
+      - OPEN-VE_REDIS_DB=
+      - OPEN-VE_REDIS_POOL_SIZE=
+      - OPEN-VE_LOG_LEVEL=
   apidocs:
     image: swaggerapi/swagger-ui
     container_name: apidocs

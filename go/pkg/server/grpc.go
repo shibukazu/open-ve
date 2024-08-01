@@ -16,6 +16,7 @@ import (
 	svcValidate "github.com/shibukazu/open-ve/go/pkg/services/validate/v1"
 	"github.com/shibukazu/open-ve/go/pkg/validator"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
@@ -49,7 +50,20 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup) {
 		panic(failure.Translate(err, appError.ErrServerStartFailed))
 	}
 
-	g.server = grpc.NewServer(grpc.UnaryInterceptor(g.accessLogInterceptor()))
+	grpcServerOpts := []grpc.ServerOption{}
+	grpcServerOpts = append(grpcServerOpts, grpc.UnaryInterceptor(g.accessLogInterceptor()))
+	if g.gRPCConfig.TLS.Enabled {
+		if g.gRPCConfig.TLS.CertPath == "" || g.gRPCConfig.TLS.KeyPath == "" {
+			panic(failure.New(appError.ErrServerStartFailed, failure.Message("certPath and keyPath must be set")))
+		}
+		creds, err := credentials.NewServerTLSFromFile(g.gRPCConfig.TLS.CertPath, g.gRPCConfig.TLS.KeyPath)
+		if err != nil {
+			panic(failure.Translate(err, appError.ErrServerStartFailed))
+		}
+		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
+	}
+
+	g.server = grpc.NewServer(grpcServerOpts...)
 
 	validateService := svcValidate.NewService(ctx, g.validator)
 	pbValidate.RegisterValidateServiceServer(g.server, validateService)
@@ -64,7 +78,11 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup) {
 			g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
 		}
 	}()
-	g.logger.Info("🟢 grpc server is started")
+
+	if g.gRPCConfig.TLS.Enabled {
+		g.logger.Info("🔒 grpc server: TLS is enabled")
+	}
+	g.logger.Info("🟢 grpc server: started")
 
 	// graceful shutdown
 	<-ctx.Done()

@@ -19,6 +19,7 @@ import (
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -46,15 +47,27 @@ func NewGateway(
 
 func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 	grpcGateway := runtime.NewServeMux()
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+
+	dialOpts := []grpc.DialOption{}
+
+	if g.gRPCConfig.TLS.Enabled {
+		if g.gRPCConfig.TLS.CertPath == "" || g.gRPCConfig.TLS.KeyPath == "" {
+			panic(failure.New(appError.ErrServerStartFailed, failure.Message("certPath and keyPath must be set")))
+		}
+		creds, err := credentials.NewClientTLSFromFile(g.gRPCConfig.TLS.CertPath, "")
+		if err != nil {
+			panic(failure.Translate(err, appError.ErrServerStartFailed))
+		}
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
+	} else {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	if err := pbValidate.RegisterValidateServiceHandlerFromEndpoint(ctx, grpcGateway, g.gRPCConfig.Addr, opts); err != nil {
+	if err := pbValidate.RegisterValidateServiceHandlerFromEndpoint(ctx, grpcGateway, g.gRPCConfig.Addr, dialOpts); err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register validate service on gateway")))
 	}
 
-	if err := pbDSL.RegisterDSLServiceHandlerFromEndpoint(ctx, grpcGateway, g.gRPCConfig.Addr, opts); err != nil {
+	if err := pbDSL.RegisterDSLServiceHandlerFromEndpoint(ctx, grpcGateway, g.gRPCConfig.Addr, dialOpts); err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register dsl service on gateway")))
 	}
 
@@ -74,11 +87,24 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 
 	go func() {
-		if err := g.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+		if g.httpConfig.TLS.Enabled {
+			if g.httpConfig.TLS.CertPath == "" || g.httpConfig.TLS.KeyPath == "" {
+				panic(failure.New(appError.ErrServerStartFailed, failure.Messagef("TLS certPath and keyPath must be specified")))
+			}
+			if err := g.server.ListenAndServeTLS(g.httpConfig.TLS.CertPath, g.httpConfig.TLS.KeyPath); err != nil && err != http.ErrServerClosed {
+				g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+			}
+		} else {
+			if err := g.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+			}
 		}
 	}()
-	g.logger.Info("🟢 gateway server is started")
+
+	if g.httpConfig.TLS.Enabled {
+		g.logger.Info("🔒 gateway server: TLS is enabled")
+	}
+	g.logger.Info("🟢 gateway server: started")
 
 	// graceful shutdown
 	<-ctx.Done()

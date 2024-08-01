@@ -12,11 +12,11 @@ import (
 func NewLogger(
 	logConfig *config.LogConfig,
 ) *slog.Logger {
-	var level slog.Level
+	var level slog.LevelVar
 	if err := level.UnmarshalText([]byte(logConfig.Level)); err != nil {
 		panic(failure.Translate(err, appError.ErrConfigFileSyntaxError, failure.Messagef("invalid log level: %s", logConfig.Level)))
 	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.SetLogLoggerLevel(level)}))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: &level}))
 
 	return logger
 }
