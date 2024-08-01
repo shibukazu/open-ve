@@ -1,14 +1,5 @@
 package config
 
-import (
-	"log/slog"
-	"os"
-
-	"github.com/morikuni/failure/v2"
-	"github.com/shibukazu/open-ve/go/pkg/appError"
-	"gopkg.in/yaml.v2"
-)
-
 type Config struct {
 	Http  HttpConfig  `yaml:"http"`
 	GRPC  GRPCConfig  `yaml:"grpc"`
@@ -45,29 +36,7 @@ type TLSConfig struct {
 	KeyPath  string `yaml:"keyPath"`
 }
 
-func NewConfig() *Config {
-	config := defaultConfig()
-
-	configPath := "config.yaml"
-
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			slog.Warn("config file not found, use default config")
-			return config
-		} else {
-			panic(failure.Unexpected(err.Error()))
-		}
-	}
-
-	if err := yaml.Unmarshal(data, config); err != nil {
-		panic(failure.Translate(err, appError.ErrConfigFileSyntaxError))
-	}
-
-	return config
-}
-
-func defaultConfig() *Config {
+func DefaultConfig() *Config {
 	return &Config{
 		Http: HttpConfig{
 			Addr:               ":8080",
