@@ -30,7 +30,7 @@ Open-VE offers an HTTP API and a gRPC API. We will provide a client SDK in the f
 | `--grpc-tls-enabled`          | `OPEN-VE_GRPC_TLS_ENABLED`          | `false`      | gRPC server TLS enabled     |
 | `--grpc-tls-cert-path`        | `OPEN-VE_GRPC_TLS_CERT_PATH`        | `""`         | gRPC server TLS cert path   |
 | `--grpc-tls-key-path`         | `OPEN-VE_GRPC_TLS_KEY_PATH`         | `""`         | gRPC server TLS key path    |
-| `--store-engine`              | `OPEN-VE_STORE_ENGINE`              | `redis`      | store engine (redis/memory) |
+| `--store-engine`              | `OPEN-VE_STORE_ENGINE`              | `memory`     | store engine (redis/memory) |
 | `--store-redis-addr`          | `OPEN-VE_STORE_REDIS_ADDR`          | `redis:6379` | Redis address               |
 | `--store-redis-password`      | `OPEN-VE_STORE_REDIS_PASSWORD`      | `""`         | Redis password              |
 | `--store-redis-db`            | `OPEN-VE_STORE_REDIS_DB`            | `0`          | Redis DB                    |
