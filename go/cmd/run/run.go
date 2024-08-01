@@ -10,9 +10,10 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/shibukazu/open-ve/go/pkg/config"
-	"github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	"github.com/shibukazu/open-ve/go/pkg/logger"
 	"github.com/shibukazu/open-ve/go/pkg/server"
+	storePkg "github.com/shibukazu/open-ve/go/pkg/store"
 	"github.com/shibukazu/open-ve/go/pkg/validator"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -71,22 +72,26 @@ func NewRunCommand() *cobra.Command {
 	flags.String("grpc-tls-key-path", defaultConfig.GRPC.TLS.KeyPath, "gRPC server TLS key path")
 	MustBindPFlag("grpc.tls.keyPath", flags.Lookup("grpc-tls-key-path"))
 	viper.MustBindEnv("grpc.tls.keyPath", "OPEN-VE_GRPC_TLS_KEY_PATH")
-	// Redis
-	flags.String("redis-addr", defaultConfig.Redis.Addr, "Redis address")
-	MustBindPFlag("redis.addr", flags.Lookup("redis-addr"))
-	viper.MustBindEnv("redis.addr", "OPEN-VE_REDIS_ADDR")
+	// Store
+	flags.String("store-engine", defaultConfig.Store.Engine, "store engine (memory, redis)")
+	MustBindPFlag("store.engine", flags.Lookup("store-engine"))
+	viper.MustBindEnv("store.engine", "OPEN-VE_STORE_ENGINE")
 
-	flags.String("redis-password", defaultConfig.Redis.Password, "Redis password")
-	MustBindPFlag("redis.password", flags.Lookup("redis-password"))
-	viper.MustBindEnv("redis.password", "OPEN-VE_REDIS_PASSWORD")
+	flags.String("store-redis-addr", defaultConfig.Store.Redis.Addr, "Redis address")
+	MustBindPFlag("store.redis.addr", flags.Lookup("store-redis-addr"))
+	viper.MustBindEnv("store.redis.addr", "OPEN-VE_STORE_REDIS_ADDR")
 
-	flags.Int("redis-db", defaultConfig.Redis.DB, "Redis DB")
-	MustBindPFlag("redis.db", flags.Lookup("redis-db"))
-	viper.MustBindEnv("redis.db", "OPEN-VE_REDIS_DB")
+	flags.String("store-redis-password", defaultConfig.Store.Redis.Password, "Redis password")
+	MustBindPFlag("store.redis.password", flags.Lookup("store-redis-password"))
+	viper.MustBindEnv("store.redis.password", "OPEN-VE_STORE_REDIS_PASSWORD")
 
-	flags.Int("redis-pool-size", defaultConfig.Redis.PoolSize, "Redis pool size")
-	MustBindPFlag("redis.poolSize", flags.Lookup("redis-pool-size"))
-	viper.MustBindEnv("redis.poolSize", "OPEN-VE_REDIS_POOL_SIZE")
+	flags.Int("store-redis-db", defaultConfig.Store.Redis.DB, "Redis DB")
+	MustBindPFlag("store.redis.db", flags.Lookup("store-redis-db"))
+	viper.MustBindEnv("store.redis.db", "OPEN-VE_STORE_REDIS_DB")
+
+	flags.Int("store-redis-pool-size", defaultConfig.Store.Redis.PoolSize, "Redis pool size")
+	MustBindPFlag("store.redis.poolSize", flags.Lookup("store-redis-pool-size"))
+	viper.MustBindEnv("store.redis.poolSize", "OPEN-VE_STORE_REDIS_POOL_SIZE")
 	// Log
 	flags.String("log-level", defaultConfig.Log.Level, "Log level")
 	MustBindPFlag("log.level", flags.Lookup("log-level"))
@@ -129,15 +134,24 @@ func run(cmd *cobra.Command, args []string) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, os.Kill)
 	defer cancel()
 
-	redis := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Addr,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
-		PoolSize: cfg.Redis.PoolSize,
-	})
+	var store storePkg.Store
+	switch cfg.Store.Engine {
+	case "redis":
+		redis := redis.NewClient(&redis.Options{
+			Addr:     cfg.Store.Redis.Addr,
+			Password: cfg.Store.Redis.Password,
+			DB:       cfg.Store.Redis.DB,
+			PoolSize: cfg.Store.Redis.PoolSize,
+		})
+		store = storePkg.NewRedisStore(redis)
+	case "memory":
+		store = storePkg.NewMemoryStore()
+	default:
+		panic("invalid store engine")
+	}
 
-	dslReader := dsl.NewDSLReader(logger, redis)
-	validator := validator.NewValidator(logger, redis)
+	dslReader := reader.NewDSLReader(logger, store)
+	validator := validator.NewValidator(logger, store)
 
 	gw := server.NewGateway(&cfg.Http, &cfg.GRPC, logger, dslReader)
 	wg.Add(1)

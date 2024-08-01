@@ -31,10 +31,11 @@ services:
       - OPEN-VE_GRPC_TLS_ENABLED=
       - OPEN-VE_GRPC_TLS_CERT_PATH=
       - OPEN-VE_GRPC_TLS_KEY_PATH=
-      - OPEN-VE_REDIS_ADDR=
-      - OPEN-VE_REDIS_PASSWORD=
-      - OPEN-VE_REDIS_DB=
-      - OPEN-VE_REDIS_POOL_SIZE=
+      - OPEN-VE_STORE_ENGINE=
+      - OPEN-VE_STORE_REDIS_ADDR=
+      - OPEN-VE_STORE_REDIS_PASSWORD=
+      - OPEN-VE_STORE_REDIS_DB=
+      - OPEN-VE_STORE_REDIS_POOL_SIZE=
       - OPEN-VE_LOG_LEVEL=
   apidocs:
     image: swaggerapi/swagger-ui

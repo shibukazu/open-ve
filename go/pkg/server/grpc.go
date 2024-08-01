@@ -11,7 +11,7 @@ import (
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/config"
-	"github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	svcDSL "github.com/shibukazu/open-ve/go/pkg/services/dsl/v1"
 	svcValidate "github.com/shibukazu/open-ve/go/pkg/services/validate/v1"
 	"github.com/shibukazu/open-ve/go/pkg/validator"
@@ -24,7 +24,7 @@ import (
 )
 
 type GRPC struct {
-	dslReader  *dsl.DSLReader
+	dslReader  *reader.DSLReader
 	validator  *validator.Validator
 	gRPCConfig *config.GRPCConfig
 	logger     *slog.Logger
@@ -34,7 +34,7 @@ type GRPC struct {
 func NewGrpc(
 	gRPCConfig *config.GRPCConfig,
 	logger *slog.Logger,
-	validator *validator.Validator, dslReader *dsl.DSLReader) *GRPC {
+	validator *validator.Validator, dslReader *reader.DSLReader) *GRPC {
 	return &GRPC{
 		validator:  validator,
 		dslReader:  dslReader,
