@@ -28,7 +28,7 @@ RUN go mod download && go mod verify
 
 COPY . ./
 
-RUN go build -o /openve ./go/cmd
+RUN go build -o /openve ./go/cmd/open-ve
 
 
 
@@ -37,4 +37,4 @@ FROM debian:bullseye-slim as runner
 
 COPY --from=builder /openve /openve
 
-CMD ["/openve"]
+CMD ["/openve", "run"]
