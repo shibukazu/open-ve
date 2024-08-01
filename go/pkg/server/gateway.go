@@ -15,7 +15,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/config"
-	"github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
 	"google.golang.org/grpc"
@@ -27,7 +27,7 @@ type Gateway struct {
 	httpConfig *config.HttpConfig
 	gRPCConfig *config.GRPCConfig
 	logger     *slog.Logger
-	dslReader  *dsl.DSLReader
+	dslReader  *reader.DSLReader
 	server     *http.Server
 }
 
@@ -35,7 +35,7 @@ func NewGateway(
 	httpConfig *config.HttpConfig,
 	gRPCConfig *config.GRPCConfig,
 	logger *slog.Logger,
-	dslReader *dsl.DSLReader,
+	dslReader *reader.DSLReader,
 ) *Gateway {
 	return &Gateway{
 		httpConfig: httpConfig,
