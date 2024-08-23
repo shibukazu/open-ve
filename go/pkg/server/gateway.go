@@ -191,13 +191,11 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 				}
 
 				// Check if the request forward is needed
-				isForwardNeed := false
-				if !dslFound {
-					isForwardNeed = true
-				} else {
+				isForwardNeed := true
+				if dslFound {
 					for _, validation := range dsl.Validations {
 						if validation.ID == id {
-							isForwardNeed = true
+							isForwardNeed = false
 							break
 						}
 					}

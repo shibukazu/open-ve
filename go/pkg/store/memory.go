@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/morikuni/failure/v2"
@@ -23,7 +24,11 @@ func NewMemoryStore(id string) *MemoryStore {
 
 func (s *MemoryStore) Reset() error {
 	s.mu.Lock()
-	s.memory = make(map[string][]byte)
+	for k := range s.memory {
+		if strings.HasPrefix(k, s.id+":") {
+			delete(s.memory, k)
+		}
+	}
 	s.mu.Unlock()
 	return nil
 }

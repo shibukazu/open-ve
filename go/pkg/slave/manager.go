@@ -1,6 +1,7 @@
 package slave
 
 import (
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -40,5 +41,5 @@ func (m *SlaveManager) FindSlave(validationId string) (*Slave, error) {
 			}
 		}
 	}
-	return nil, failure.New("slave node that can handle the validation ID is not found")
+	return nil, failure.New(fmt.Sprintf("slave node that can handle the validation ID (%s) is not found", validationId))
 }

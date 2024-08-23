@@ -20,7 +20,11 @@ func NewRedisStore(id string, redisClient *redis.Client) *RedisStore {
 }
 
 func (s *RedisStore) Reset() error {
-	if err := s.redisClient.FlushDB().Err(); err != nil {
+	keys, _ := s.redisClient.Scan(0, s.id+":*", 0).Val()
+	if len(keys) == 0 {
+		return nil
+	}
+	if err := s.redisClient.Del(keys...).Err(); err != nil {
 		return failure.Translate(err, appError.ErrRedisOperationFailed)
 	}
 	return nil
