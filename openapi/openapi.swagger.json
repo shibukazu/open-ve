@@ -279,6 +279,9 @@
         "address": {
           "type": "string"
         },
+        "tlsEnabled": {
+          "type": "boolean"
+        },
         "validationIds": {
           "type": "array",
           "items": {

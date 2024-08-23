@@ -2,15 +2,11 @@ package run
 
 import (
 	"context"
-	"crypto/tls"
-	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/morikuni/failure/v2"
@@ -22,13 +18,9 @@ import (
 	"github.com/shibukazu/open-ve/go/pkg/slave"
 	storePkg "github.com/shibukazu/open-ve/go/pkg/store"
 	"github.com/shibukazu/open-ve/go/pkg/validator"
-	pbSlave "github.com/shibukazu/open-ve/go/proto/slave/v1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func NewRunCommand() *cobra.Command {
@@ -214,47 +206,14 @@ func run(cmd *cobra.Command, args []string) {
 	}(wg)
 
 	if cfg.Mode == "slave" {
-		go func() {
-			registerSlave(ctx, cfg, logger)
-		}()
+		wg.Add(1)
+		slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.GRPC.Addr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterGRPCAddr, cfg.Slave.MasterGRPCTLSEnabled, dslReader, logger)
+		go func(wg *sync.WaitGroup) {
+			logger.Info("🚀 slave registration timer: starting..")
+			slaveRegistrar.RegisterTimer(ctx, wg)
+		}(wg)
 	}
 
 	wg.Wait()
-	logger.Info("🛑 all server: stopped")
-}
-
-func registerSlave(ctx context.Context, cfg config.Config, logger *slog.Logger) {
-	var opts []grpc.DialOption
-
-	if cfg.Slave.MasterGRPCTLSEnabled {
-		creds := credentials.NewTLS(&tls.Config{})
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	}
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), grpc.WithTimeout(5*time.Second))
-
-	conn, err := grpc.Dial(cfg.Slave.MasterGRPCAddr, opts...)
-	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
-	}
-	defer conn.Close()
-
-	client := pbSlave.NewSlaveServiceClient(conn)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.Tick(5 * time.Second):
-			_, err := client.Register(ctx, &pbSlave.RegisterRequest{
-				Id:            cfg.Slave.Id,
-				Address:       cfg.GRPC.Addr,
-				ValidationIds: []string{"validation1", "validation2"},
-			})
-			if err != nil {
-				logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to register to master")).Error())
-			} else {
-				logger.Info(fmt.Sprintf("📓 slave (%s) registration success", cfg.Slave.Id))
-			}
-		}
-	}
+	logger.Info("🛑 all server and timer: stopped")
 }

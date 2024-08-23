@@ -10,6 +10,7 @@ func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 	s.slaveManager.RegisterSlave(
 		req.Id,
 		req.Address,
+		req.TlsEnabled,
 		req.ValidationIds,
 	)
 	return &pb.RegisterResponse{}, nil

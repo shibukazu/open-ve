@@ -10,7 +10,8 @@ option go_package = "proto/slave/v1";
 message RegisterRequest {
   string id = 1 [(google.api.field_behavior) = REQUIRED];
   string address = 2 [(google.api.field_behavior) = REQUIRED];
-  repeated string validation_ids = 3 [(google.api.field_behavior) = REQUIRED];
+  bool tls_enabled = 3;
+  repeated string validation_ids = 4 [(google.api.field_behavior) = REQUIRED];
 }
 message RegisterResponse {}
 
