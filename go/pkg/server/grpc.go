@@ -59,7 +59,7 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 	}
 
 	grpcServerOpts := []grpc.ServerOption{}
-	grpcServerOpts = append(grpcServerOpts, grpc.UnaryInterceptor(g.accessLogInterceptor()))
+	grpcServerOpts = append(grpcServerOpts, grpc.UnaryInterceptor(g.interceptor()))
 	if g.gRPCConfig.TLS.Enabled {
 		if g.gRPCConfig.TLS.CertPath == "" || g.gRPCConfig.TLS.KeyPath == "" {
 			panic(failure.New(appError.ErrServerStartFailed, failure.Message("certPath and keyPath must be set")))
@@ -122,11 +122,12 @@ func (g *GRPC) shutdown(ctx context.Context) {
 	}
 }
 
-func (g *GRPC) accessLogInterceptor() grpc.UnaryServerInterceptor {
+func (g *GRPC) interceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		// Log the request
 		g.logger.Info("🔍 Access Log", slog.String("Method", info.FullMethod), slog.String("Request", fmt.Sprintf("%+v", req)))
-		resp, err := handler(ctx, req)
 
+		resp, err := handler(ctx, req)
 		return resp, err
 	}
 }

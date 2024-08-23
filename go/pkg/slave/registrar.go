@@ -1,56 +1,51 @@
 package slave
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
-	"log"
+	"encoding/json"
 	"log/slog"
+	"net/http"
 	"sync"
 	"time"
 
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
-	pb "github.com/shibukazu/open-ve/go/proto/slave/v1"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type SlaveRegistrar struct {
-	Id         string
-	Address    string
-	TLSEnabled bool
-	dslReader  *reader.DSLReader
-	gRPCClient pb.SlaveServiceClient
-	gRPCConn   *grpc.ClientConn
-	logger     *slog.Logger
+	Id                string
+	SlaveHTTPAddress  string
+	SlaveTLSEnabled   bool
+	MasterHTTPAddress string
+	dslReader         *reader.DSLReader
+	httpClient        *http.Client
+	logger            *slog.Logger
 }
 
-func NewSlaveRegistrar(id, slaveAddress string, slaveTLSEnabled bool, masterAddress string, masterTLSEnabled bool, dslReader *reader.DSLReader, logger *slog.Logger) *SlaveRegistrar {
-	var opts []grpc.DialOption
+func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, masterHTTPAddress string, masterTLSEnabled bool, dslReader *reader.DSLReader, logger *slog.Logger) *SlaveRegistrar {
+	var client *http.Client
 
 	if masterTLSEnabled {
-		creds := credentials.NewTLS(&tls.Config{})
-		opts = append(opts, grpc.WithTransportCredentials(creds))
+		transport := &http.Transport{
+			TLSClientConfig: &tls.Config{},
+		}
+		client = &http.Client{Transport: transport}
+	} else {
+		client = &http.Client{}
 	}
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), grpc.WithTimeout(5*time.Second))
-
-	conn, err := grpc.Dial(masterAddress, opts...)
-	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
-	}
-
-	gRPCClient := pb.NewSlaveServiceClient(conn)
+	client.Timeout = 5 * time.Second
 
 	return &SlaveRegistrar{
-		Id:         id,
-		Address:    slaveAddress,
-		TLSEnabled: slaveTLSEnabled,
-		dslReader:  dslReader,
-		gRPCClient: gRPCClient,
-		gRPCConn:   conn,
-		logger:     logger,
+		Id:                id,
+		SlaveHTTPAddress:  slaveHTTPAddress,
+		SlaveTLSEnabled:   slaveTLSEnabled,
+		MasterHTTPAddress: masterHTTPAddress,
+		dslReader:         dslReader,
+		httpClient:        client,
+		logger:            logger,
 	}
 }
 
@@ -62,7 +57,6 @@ func (s *SlaveRegistrar) RegisterTimer(ctx context.Context, wg *sync.WaitGroup) 
 		select {
 		case <-ctx.Done():
 			ticker.Stop()
-			s.gRPCConn.Close()
 			s.logger.Info("🛑 slave registration timer stopped")
 			wg.Done()
 			return
@@ -82,14 +76,35 @@ func (s *SlaveRegistrar) register(ctx context.Context) {
 	for i, validation := range dsl.Validations {
 		validationIds[i] = validation.ID
 	}
-	_, err = s.gRPCClient.Register(ctx, &pb.RegisterRequest{
-		Id:            s.Id,
-		Address:       s.Address,
-		TlsEnabled:    s.TLSEnabled,
-		ValidationIds: validationIds,
-	})
+	reqBody := map[string]interface{}{
+		"id":             s.Id,
+		"address":        s.SlaveHTTPAddress,
+		"tls_enabled":    s.SlaveTLSEnabled,
+		"validation_ids": validationIds,
+	}
+	body, err := json.Marshal(reqBody)
 	if err != nil {
-		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to register to master")).Error())
+		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to marshal request body")).Error())
+		return
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.MasterHTTPAddress+"/v1/slave/register", bytes.NewReader(body))
+	if err != nil {
+		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to create request")).Error())
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to send request")).Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		s.logger.Error(failure.New(appError.ErrSlaveRegistrationFailed, failure.Messagef("Failed to register to master: %d", resp.StatusCode)).Error())
+		return
 	} else {
 		s.logger.Info("📓 slave registration success")
 	}

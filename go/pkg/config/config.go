@@ -11,9 +11,9 @@ type Config struct {
 
 type SlaveConfig struct {
 	Id                   string `yaml:"id"`
-	SlaveGRPCAddr        string `yaml:"slaveAddr"`
-	MasterGRPCTLSEnabled bool   `yaml:"masterGRPCTLSEnabled"`
-	MasterGRPCAddr       string `yaml:"masterGRPCAddr"`
+	SlaveHTTPAddr        string `yaml:"slaveHTTPAddr"`
+	MasterHTTPTLSEnabled bool   `yaml:"masterHTTPTLSEnabled"`
+	MasterHTTPAddr       string `yaml:"masterHTTPAddr"`
 }
 
 type HttpConfig struct {
@@ -55,9 +55,9 @@ func DefaultConfig() *Config {
 		Mode: "master",
 		Slave: SlaveConfig{
 			Id:                   "",
-			SlaveGRPCAddr:        "",
-			MasterGRPCAddr:       "",
-			MasterGRPCTLSEnabled: false,
+			SlaveHTTPAddr:        "",
+			MasterHTTPAddr:       "",
+			MasterHTTPTLSEnabled: false,
 		},
 		Http: HttpConfig{
 			Port:               "8080",

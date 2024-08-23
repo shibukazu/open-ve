@@ -16,7 +16,8 @@ const (
 
 	ErrRequestParameterInvalid = "RequestParameterInvalid"
 
-	ErrValidateServiceIDNotFound = "ValidateServiceIDNotFound"
+	ErrValidateServiceIDNotFound    = "ValidateServiceIDNotFound"
+	ErrValidateServiceForwardFailed = "ValidateServiceForwardFailed"
 
 	ErrDSLServiceDSLSyntaxError = "DSLServiceDSLSyntaxError"
 
