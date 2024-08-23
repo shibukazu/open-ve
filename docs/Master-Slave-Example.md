@@ -9,24 +9,13 @@ Note: In this example, the master node is hosted at `localhost:8081`, and the sl
 ### Master Node
 
 ```bash
-OPEN-VE_MODE=master
-OPEN-VE_HTTP_PORT=8081
-OPEN-VE_GRPC_PORT=9001
-
-open-ve run
+open-ve run --mode=master --http-port=8081 --grpc-port=9001
 ```
 
 ### Slave Node
 
 ```bash
-OPEN-VE_MODE=slave
-OPEN-VE_SLAVE_ID=slave-node-id
-OPEN-VE_SLAVE_MASTER_HTTP_ADDR=http://localhost:8081
-OPEN-VE_SLAVE_SLAVE_HTTP_ADDR=http://localhost:8082
-OPEN-VE_HTTP_PORT=8082
-OPEN-VE_GRPC_PORT=9002
-
-open-ve run
+open-ve run --mode=slave --slave-id=slave-node-id --slave-master-http-addr=http://localhost:8081 --slave-slave-http-addr=http://localhost:8082 --http-port=8082 --grpc-port=9002
 ```
 
 ## Scinario
