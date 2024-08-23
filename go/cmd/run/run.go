@@ -169,6 +169,13 @@ func run(cmd *cobra.Command, args []string) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, os.Kill)
 	defer cancel()
 
+	var nodeId string
+	if cfg.Mode == "master" {
+		nodeId = "master"
+	} else {
+		nodeId = cfg.Slave.Id
+	}
+
 	var store storePkg.Store
 	switch cfg.Store.Engine {
 	case "redis":
@@ -178,9 +185,9 @@ func run(cmd *cobra.Command, args []string) {
 			DB:       cfg.Store.Redis.DB,
 			PoolSize: cfg.Store.Redis.PoolSize,
 		})
-		store = storePkg.NewRedisStore(redis)
+		store = storePkg.NewRedisStore(nodeId, redis)
 	case "memory":
-		store = storePkg.NewMemoryStore()
+		store = storePkg.NewMemoryStore(nodeId)
 	default:
 		panic("invalid store engine")
 	}
