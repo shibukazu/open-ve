@@ -11,19 +11,20 @@ type Config struct {
 
 type SlaveConfig struct {
 	Id                   string `yaml:"id"`
+	SlaveGRPCAddr        string `yaml:"slaveAddr"`
 	MasterGRPCTLSEnabled bool   `yaml:"masterGRPCTLSEnabled"`
 	MasterGRPCAddr       string `yaml:"masterGRPCAddr"`
 }
 
 type HttpConfig struct {
-	Addr               string    `yaml:"addr"`
+	Port               string    `yaml:"port"`
 	CORSAllowedOrigins []string  `yaml:"corsAllowedOrigins"`
 	CORSAllowedHeaders []string  `yaml:"corsAllowedHeaders"`
 	TLS                TLSConfig `yaml:"tls"`
 }
 
 type GRPCConfig struct {
-	Addr string    `yaml:"addr"`
+	Port string    `yaml:"port"`
 	TLS  TLSConfig `yaml:"tls"`
 }
 
@@ -54,11 +55,12 @@ func DefaultConfig() *Config {
 		Mode: "master",
 		Slave: SlaveConfig{
 			Id:                   "",
+			SlaveGRPCAddr:        "",
 			MasterGRPCAddr:       "",
 			MasterGRPCTLSEnabled: false,
 		},
 		Http: HttpConfig{
-			Addr:               ":8080",
+			Port:               "8080",
 			CORSAllowedOrigins: []string{"*"},
 			CORSAllowedHeaders: []string{"*"},
 			TLS: TLSConfig{
@@ -66,7 +68,7 @@ func DefaultConfig() *Config {
 			},
 		},
 		GRPC: GRPCConfig{
-			Addr: ":9000",
+			Port: "9000",
 			TLS: TLSConfig{
 				Enabled: false,
 			},

@@ -27,7 +27,7 @@ type SlaveRegistrar struct {
 	logger     *slog.Logger
 }
 
-func NewSlaveRegistrar(id, address string, tlsEnabled bool, masterAddress string, masterTLSEnabled bool, dslReader *reader.DSLReader, logger *slog.Logger) *SlaveRegistrar {
+func NewSlaveRegistrar(id, slaveAddress string, slaveTLSEnabled bool, masterAddress string, masterTLSEnabled bool, dslReader *reader.DSLReader, logger *slog.Logger) *SlaveRegistrar {
 	var opts []grpc.DialOption
 
 	if masterTLSEnabled {
@@ -45,8 +45,8 @@ func NewSlaveRegistrar(id, address string, tlsEnabled bool, masterAddress string
 
 	return &SlaveRegistrar{
 		Id:         id,
-		Address:    address,
-		TLSEnabled: tlsEnabled,
+		Address:    slaveAddress,
+		TLSEnabled: slaveTLSEnabled,
 		dslReader:  dslReader,
 		gRPCClient: gRPCClient,
 		gRPCConn:   conn,

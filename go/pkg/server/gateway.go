@@ -63,11 +63,11 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	if err := pbValidate.RegisterValidateServiceHandlerFromEndpoint(ctx, grpcGateway, g.gRPCConfig.Addr, dialOpts); err != nil {
+	if err := pbValidate.RegisterValidateServiceHandlerFromEndpoint(ctx, grpcGateway, ":"+g.gRPCConfig.Port, dialOpts); err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register validate service on gateway")))
 	}
 
-	if err := pbDSL.RegisterDSLServiceHandlerFromEndpoint(ctx, grpcGateway, g.gRPCConfig.Addr, dialOpts); err != nil {
+	if err := pbDSL.RegisterDSLServiceHandlerFromEndpoint(ctx, grpcGateway, ":"+g.gRPCConfig.Port, dialOpts); err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register dsl service on gateway")))
 	}
 
@@ -82,7 +82,7 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}).Handler(withMiddleware)
 
 	g.server = &http.Server{
-		Addr:    g.httpConfig.Addr,
+		Addr:    ":" + g.httpConfig.Port,
 		Handler: withCors,
 	}
 

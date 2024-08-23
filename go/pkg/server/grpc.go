@@ -53,7 +53,7 @@ func NewGrpc(
 
 func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
-	listen, err := net.Listen("tcp", g.gRPCConfig.Addr)
+	listen, err := net.Listen("tcp", ":"+g.gRPCConfig.Port)
 	if err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed))
 	}

@@ -35,6 +35,10 @@ func NewRunCommand() *cobra.Command {
 				if id == "" {
 					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("ID of the slave server is required"))
 				}
+				slaveAddr := viper.GetString("slave.slaveGRPCAddr")
+				if slaveAddr == "" {
+					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("gRPC address of the slave server is required"))
+				}
 				masterAddr := viper.GetString("slave.masterGRPCAddr")
 				if masterAddr == "" {
 					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("gRPC address of the master server is required"))
@@ -59,6 +63,10 @@ func NewRunCommand() *cobra.Command {
 	MustBindPFlag("slave.id", flags.Lookup("slave-id"))
 	viper.MustBindEnv("slave.id", "OPEN-VE_SLAVE_ID")
 
+	flags.String("slave-slave-grpc-addr", defaultConfig.Slave.SlaveGRPCAddr, "gRPC address of the slave server")
+	MustBindPFlag("slave.slaveGRPCAddr", flags.Lookup("slave-slave-grpc-addr"))
+	viper.MustBindEnv("slave.slaveGRPCAddr", "OPEN-VE_SLAVE_SLAVE_GRPC_ADDR")
+
 	flags.String("slave-master-grpc-addr", defaultConfig.Slave.MasterGRPCAddr, "gRPC address of the master server")
 	MustBindPFlag("slave.masterGRPCAddr", flags.Lookup("slave-master-grpc-addr"))
 	viper.MustBindEnv("slave.masterGRPCAddr", "OPEN-VE_SLAVE_MASTER_GRPC_ADDR")
@@ -68,9 +76,9 @@ func NewRunCommand() *cobra.Command {
 	viper.MustBindEnv("slave.masterGRPCTLSEnabled", "OPEN-VE_SLAVE_MASTER_GRPC_TLS_ENABLED")
 
 	// HTTP
-	flags.String("http-addr", defaultConfig.Http.Addr, "HTTP server address")
-	MustBindPFlag("http.addr", flags.Lookup("http-addr"))
-	viper.MustBindEnv("http.addr", "OPEN-VE_HTTP_ADDR")
+	flags.String("http-port", defaultConfig.Http.Port, "HTTP server port")
+	MustBindPFlag("http.port", flags.Lookup("http-port"))
+	viper.MustBindEnv("http.port", "OPEN-VE_HTTP_PORT")
 
 	flags.StringSlice("http-cors-allowed-origins", defaultConfig.Http.CORSAllowedOrigins, "CORS allowed origins")
 	MustBindPFlag("http.corsAllowedOrigins", flags.Lookup("http-cors-allowed-origins"))
@@ -92,9 +100,9 @@ func NewRunCommand() *cobra.Command {
 	MustBindPFlag("http.tls.keyPath", flags.Lookup("http-tls-key-path"))
 	viper.MustBindEnv("http.tls.keyPath", "OPEN-VE_HTTP_TLS_KEY_PATH")
 	// GRPC
-	flags.String("grpc-addr", defaultConfig.GRPC.Addr, "gRPC server address")
-	MustBindPFlag("grpc.addr", flags.Lookup("grpc-addr"))
-	viper.MustBindEnv("grpc.addr", "OPEN-VE_GRPC_ADDR")
+	flags.String("grpc-port", defaultConfig.GRPC.Port, "gRPC server port")
+	MustBindPFlag("grpc.port", flags.Lookup("grpc-port"))
+	viper.MustBindEnv("grpc.port", "OPEN-VE_GRPC_PORT")
 
 	flags.Bool("grpc-tls-enabled", defaultConfig.GRPC.TLS.Enabled, "gRPC server TLS enabled")
 	MustBindPFlag("grpc.tls.enabled", flags.Lookup("grpc-tls-enabled"))
@@ -214,7 +222,7 @@ func run(cmd *cobra.Command, args []string) {
 
 	if cfg.Mode == "slave" {
 		wg.Add(1)
-		slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.GRPC.Addr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterGRPCAddr, cfg.Slave.MasterGRPCTLSEnabled, dslReader, logger)
+		slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveGRPCAddr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterGRPCAddr, cfg.Slave.MasterGRPCTLSEnabled, dslReader, logger)
 		go func(wg *sync.WaitGroup) {
 			logger.Info("🚀 slave registration timer: starting..")
 			slaveRegistrar.RegisterTimer(ctx, wg)
