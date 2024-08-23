@@ -8,12 +8,12 @@ import (
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 )
 
-func getVariablesID(id string) string {
-	return "variables:" + id
+func getVariablesID(nodeId string, id string) string {
+	return nodeId + ":variables:" + id
 }
 
-func getAstID(id string) string {
-	return "ast:" + id
+func getAstID(nodeId string, id string) string {
+	return nodeId + ":ast:" + id
 }
 
 func jsonEncodeAllEncodedAST(allEncodedAST [][]byte) ([]byte, error) {

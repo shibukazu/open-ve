@@ -9,10 +9,13 @@ import (
 	"syscall"
 
 	"github.com/go-redis/redis"
+	"github.com/morikuni/failure/v2"
+	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	"github.com/shibukazu/open-ve/go/pkg/logger"
 	"github.com/shibukazu/open-ve/go/pkg/server"
+	"github.com/shibukazu/open-ve/go/pkg/slave"
 	storePkg "github.com/shibukazu/open-ve/go/pkg/store"
 	"github.com/shibukazu/open-ve/go/pkg/validator"
 	"github.com/spf13/cobra"
@@ -25,17 +28,57 @@ func NewRunCommand() *cobra.Command {
 		Use:   "run",
 		Short: "Run the Open-VE server.",
 		Long:  "Run the Open-VE server.",
-		Run:   run,
-		Args:  cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			mode := viper.GetString("mode")
+			if mode == "slave" {
+				id := viper.GetString("slave.id")
+				if id == "" {
+					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("ID of the slave server is required"))
+				}
+				slaveHTTPAddr := viper.GetString("slave.slaveHTTPAddr")
+				if slaveHTTPAddr == "" {
+					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("HTTP address of the slave server is required"))
+				}
+				masterHTTPAddr := viper.GetString("slave.masterHTTPAddr")
+				if masterHTTPAddr == "" {
+					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("HTTP address of the master server is required"))
+				}
+			}
+			return nil
+		},
+		Run:  run,
+		Args: cobra.NoArgs,
 	}
 
 	defaultConfig := config.DefaultConfig()
 
 	flags := cmd.Flags()
+	// Mode
+	flags.String("mode", defaultConfig.Mode, "mode (master, slave)")
+	MustBindPFlag("mode", flags.Lookup("mode"))
+	viper.MustBindEnv("mode", "OPEN-VE_MODE")
+
+	// Slave (If mode is slave, this is required)
+	flags.String("slave-id", defaultConfig.Slave.Id, "ID of the slave server")
+	MustBindPFlag("slave.id", flags.Lookup("slave-id"))
+	viper.MustBindEnv("slave.id", "OPEN-VE_SLAVE_ID")
+
+	flags.String("slave-slave-http-addr", defaultConfig.Slave.SlaveHTTPAddr, "HTTP address of the slave server")
+	MustBindPFlag("slave.slaveHTTPAddr", flags.Lookup("slave-slave-http-addr"))
+	viper.MustBindEnv("slave.slaveHTTPAddr", "OPEN-VE_SLAVE_SLAVE_HTTP_ADDR")
+
+	flags.String("slave-master-http-addr", defaultConfig.Slave.MasterHTTPAddr, "HTTP address of the master server")
+	MustBindPFlag("slave.masterHTTPAddr", flags.Lookup("slave-master-http-addr"))
+	viper.MustBindEnv("slave.masterHTTPAddr", "OPEN-VE_SLAVE_MASTER_HTTP_ADDR")
+
+	flags.Bool("slave-master-http-tls-enabled", defaultConfig.Slave.MasterHTTPTLSEnabled, "connect to master server with TLS")
+	MustBindPFlag("slave.masterHTTPTLSEnabled", flags.Lookup("slave-master-http-tls-enabled"))
+	viper.MustBindEnv("slave.masterHTTPTLSEnabled", "OPEN-VE_SLAVE_MASTER_HTTP_TLS_ENABLED")
+
 	// HTTP
-	flags.String("http-addr", defaultConfig.Http.Addr, "HTTP server address")
-	MustBindPFlag("http.addr", flags.Lookup("http-addr"))
-	viper.MustBindEnv("http.addr", "OPEN-VE_HTTP_ADDR")
+	flags.String("http-port", defaultConfig.Http.Port, "HTTP server port")
+	MustBindPFlag("http.port", flags.Lookup("http-port"))
+	viper.MustBindEnv("http.port", "OPEN-VE_HTTP_PORT")
 
 	flags.StringSlice("http-cors-allowed-origins", defaultConfig.Http.CORSAllowedOrigins, "CORS allowed origins")
 	MustBindPFlag("http.corsAllowedOrigins", flags.Lookup("http-cors-allowed-origins"))
@@ -57,9 +100,9 @@ func NewRunCommand() *cobra.Command {
 	MustBindPFlag("http.tls.keyPath", flags.Lookup("http-tls-key-path"))
 	viper.MustBindEnv("http.tls.keyPath", "OPEN-VE_HTTP_TLS_KEY_PATH")
 	// GRPC
-	flags.String("grpc-addr", defaultConfig.GRPC.Addr, "gRPC server address")
-	MustBindPFlag("grpc.addr", flags.Lookup("grpc-addr"))
-	viper.MustBindEnv("grpc.addr", "OPEN-VE_GRPC_ADDR")
+	flags.String("grpc-port", defaultConfig.GRPC.Port, "gRPC server port")
+	MustBindPFlag("grpc.port", flags.Lookup("grpc-port"))
+	viper.MustBindEnv("grpc.port", "OPEN-VE_GRPC_PORT")
 
 	flags.Bool("grpc-tls-enabled", defaultConfig.GRPC.TLS.Enabled, "gRPC server TLS enabled")
 	MustBindPFlag("grpc.tls.enabled", flags.Lookup("grpc-tls-enabled"))
@@ -134,6 +177,13 @@ func run(cmd *cobra.Command, args []string) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, os.Kill)
 	defer cancel()
 
+	var nodeId string
+	if cfg.Mode == "master" {
+		nodeId = "master"
+	} else {
+		nodeId = cfg.Slave.Id
+	}
+
 	var store storePkg.Store
 	switch cfg.Store.Engine {
 	case "redis":
@@ -143,17 +193,18 @@ func run(cmd *cobra.Command, args []string) {
 			DB:       cfg.Store.Redis.DB,
 			PoolSize: cfg.Store.Redis.PoolSize,
 		})
-		store = storePkg.NewRedisStore(redis)
+		store = storePkg.NewRedisStore(nodeId, redis)
 	case "memory":
-		store = storePkg.NewMemoryStore()
+		store = storePkg.NewMemoryStore(nodeId)
 	default:
 		panic("invalid store engine")
 	}
 
 	dslReader := reader.NewDSLReader(logger, store)
 	validator := validator.NewValidator(logger, store)
+	slaveManager := slave.NewSlaveManager(logger)
 
-	gw := server.NewGateway(&cfg.Http, &cfg.GRPC, logger, dslReader)
+	gw := server.NewGateway(cfg.Mode, &cfg.Http, &cfg.GRPC, logger, dslReader, slaveManager)
 	wg.Add(1)
 
 	logger.Info("🚀 Open-VE: starting...", slog.Any("config", cfg))
@@ -162,13 +213,22 @@ func run(cmd *cobra.Command, args []string) {
 		gw.Run(ctx, wg)
 	}(wg)
 
-	grpc := server.NewGrpc(&cfg.GRPC, logger, validator, dslReader)
+	grpc := server.NewGrpc(&cfg.GRPC, logger, validator, dslReader, slaveManager)
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		logger.Info("🚀 grpc server: starting..")
-		grpc.Run(ctx, wg)
+		grpc.Run(ctx, wg, cfg.Mode)
 	}(wg)
 
+	if cfg.Mode == "slave" {
+		wg.Add(1)
+		slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveHTTPAddr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterHTTPAddr, cfg.Slave.MasterHTTPTLSEnabled, dslReader, logger)
+		go func(wg *sync.WaitGroup) {
+			logger.Info("🚀 slave registration timer: starting..")
+			slaveRegistrar.RegisterTimer(ctx, wg)
+		}(wg)
+	}
+
 	wg.Wait()
-	logger.Info("🛑 all server: stopped")
+	logger.Info("🛑 all server and timer: stopped")
 }

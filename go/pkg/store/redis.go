@@ -11,15 +11,20 @@ import (
 )
 
 type RedisStore struct {
+	id          string
 	redisClient *redis.Client
 }
 
-func NewRedisStore(redisClient *redis.Client) *RedisStore {
-	return &RedisStore{redisClient: redisClient}
+func NewRedisStore(id string, redisClient *redis.Client) *RedisStore {
+	return &RedisStore{id: id, redisClient: redisClient}
 }
 
 func (s *RedisStore) Reset() error {
-	if err := s.redisClient.FlushDB().Err(); err != nil {
+	keys, _ := s.redisClient.Scan(0, s.id+":*", 0).Val()
+	if len(keys) == 0 {
+		return nil
+	}
+	if err := s.redisClient.Del(keys...).Err(); err != nil {
 		return failure.Translate(err, appError.ErrRedisOperationFailed)
 	}
 	return nil
@@ -32,7 +37,7 @@ func (s *RedisStore) WriteSchema(dsl *dsl.DSL) error {
 	if err := enc.Encode(dsl); err != nil {
 		return failure.Translate(err, appError.ErrDSLSyntaxError)
 	}
-	if err := s.redisClient.Set("schema", dslJson.String(), 0).Err(); err != nil {
+	if err := s.redisClient.Set(s.id+":schema", dslJson.String(), 0).Err(); err != nil {
 		return failure.Translate(err, appError.ErrRedisOperationFailed)
 	}
 	return nil
@@ -40,7 +45,7 @@ func (s *RedisStore) WriteSchema(dsl *dsl.DSL) error {
 
 func (s *RedisStore) ReadSchema() (*dsl.DSL, error) {
 	dsl := &dsl.DSL{}
-	dslJSON, err := s.redisClient.Get("schema").Bytes()
+	dslJSON, err := s.redisClient.Get(s.id + ":schema").Bytes()
 	if err != nil {
 		return nil, failure.Translate(err, appError.ErrRedisOperationFailed)
 	}
@@ -56,14 +61,14 @@ func (s *RedisStore) WriteVariables(id string, variables []dsl.Variable) error {
 	if err != nil {
 		return failure.Translate(err, appError.ErrDSLSyntaxError)
 	}
-	if err := s.redisClient.Set(getVariablesID(id), variablesJson, 0).Err(); err != nil {
+	if err := s.redisClient.Set(getVariablesID(s.id, id), variablesJson, 0).Err(); err != nil {
 		return failure.Translate(err, appError.ErrRedisOperationFailed)
 	}
 	return nil
 }
 
 func (s *RedisStore) ReadVariables(id string) ([]dsl.Variable, error) {
-	variablesJson, err := s.redisClient.Get(getVariablesID(id)).Bytes()
+	variablesJson, err := s.redisClient.Get(getVariablesID(s.id, id)).Bytes()
 	if err != nil {
 		return nil, failure.Translate(err, appError.ErrRedisOperationFailed)
 	}
@@ -85,14 +90,14 @@ func (s *RedisStore) WriteAllEncodedAST(id string, allEncodedAST [][]byte) error
 		return err
 	}
 
-	if err := s.redisClient.Set(getAstID(id), jsonEncodedAllEncodedAST, 0).Err(); err != nil {
+	if err := s.redisClient.Set(getAstID(s.id, id), jsonEncodedAllEncodedAST, 0).Err(); err != nil {
 		return failure.Translate(err, appError.ErrRedisOperationFailed)
 	}
 	return nil
 }
 
 func (s *RedisStore) ReadAllEncodedAST(id string) ([][]byte, error) {
-	jsonEncodedAllEncodedAST, err := s.redisClient.Get(getAstID(id)).Bytes()
+	jsonEncodedAllEncodedAST, err := s.redisClient.Get(getAstID(s.id, id)).Bytes()
 	if err != nil {
 		return nil, failure.Translate(err, appError.ErrRedisOperationFailed)
 	}
@@ -102,5 +107,3 @@ func (s *RedisStore) ReadAllEncodedAST(id string) ([][]byte, error) {
 	}
 	return allEncodedAST, nil
 }
-
-

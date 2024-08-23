@@ -1,0 +1,31 @@
+syntax = "proto3";
+package slave.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "proto/slave/v1";
+
+message RegisterRequest {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  string address = 2 [(google.api.field_behavior) = REQUIRED];
+  bool tls_enabled = 3;
+  repeated string validation_ids = 4 [(google.api.field_behavior) = REQUIRED];
+}
+message RegisterResponse {}
+
+service SlaveService {
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/v1/slave/register"
+      body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Register Slave Node"
+      tags: ["Slave"]
+      operation_id: "Register"
+    };
+  }
+}
