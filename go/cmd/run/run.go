@@ -2,22 +2,33 @@ package run
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/morikuni/failure/v2"
+	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	"github.com/shibukazu/open-ve/go/pkg/logger"
 	"github.com/shibukazu/open-ve/go/pkg/server"
+	"github.com/shibukazu/open-ve/go/pkg/slave"
 	storePkg "github.com/shibukazu/open-ve/go/pkg/store"
 	"github.com/shibukazu/open-ve/go/pkg/validator"
+	pbSlave "github.com/shibukazu/open-ve/go/proto/slave/v1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func NewRunCommand() *cobra.Command {
@@ -25,13 +36,45 @@ func NewRunCommand() *cobra.Command {
 		Use:   "run",
 		Short: "Run the Open-VE server.",
 		Long:  "Run the Open-VE server.",
-		Run:   run,
-		Args:  cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			mode := viper.GetString("mode")
+			if mode == "slave" {
+				id := viper.GetString("slave.id")
+				if id == "" {
+					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("ID of the slave server is required"))
+				}
+				masterAddr := viper.GetString("slave.masterGRPCAddr")
+				if masterAddr == "" {
+					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("gRPC address of the master server is required"))
+				}
+			}
+			return nil
+		},
+		Run:  run,
+		Args: cobra.NoArgs,
 	}
 
 	defaultConfig := config.DefaultConfig()
 
 	flags := cmd.Flags()
+	// Mode
+	flags.String("mode", defaultConfig.Mode, "mode (master, slave)")
+	MustBindPFlag("mode", flags.Lookup("mode"))
+	viper.MustBindEnv("mode", "OPEN-VE_MODE")
+
+	// Slave (If mode is slave, this is required)
+	flags.String("slave-id", defaultConfig.Slave.Id, "ID of the slave server")
+	MustBindPFlag("slave.id", flags.Lookup("slave-id"))
+	viper.MustBindEnv("slave.id", "OPEN-VE_SLAVE_ID")
+
+	flags.String("slave-master-grpc-addr", defaultConfig.Slave.MasterGRPCAddr, "gRPC address of the master server")
+	MustBindPFlag("slave.masterGRPCAddr", flags.Lookup("slave-master-grpc-addr"))
+	viper.MustBindEnv("slave.masterGRPCAddr", "OPEN-VE_SLAVE_MASTER_GRPC_ADDR")
+
+	flags.Bool("slave-master-grpc-tls-enabled", defaultConfig.Slave.MasterGRPCTLSEnabled, "connect to master server with TLS")
+	MustBindPFlag("slave.masterGRPCTLSEnabled", flags.Lookup("slave-master-grpc-tls-enabled"))
+	viper.MustBindEnv("slave.masterGRPCTLSEnabled", "OPEN-VE_SLAVE_MASTER_GRPC_TLS_ENABLED")
+
 	// HTTP
 	flags.String("http-addr", defaultConfig.Http.Addr, "HTTP server address")
 	MustBindPFlag("http.addr", flags.Lookup("http-addr"))
@@ -152,6 +195,7 @@ func run(cmd *cobra.Command, args []string) {
 
 	dslReader := reader.NewDSLReader(logger, store)
 	validator := validator.NewValidator(logger, store)
+	slaveManager := slave.NewSlaveManager(logger)
 
 	gw := server.NewGateway(&cfg.Http, &cfg.GRPC, logger, dslReader)
 	wg.Add(1)
@@ -162,13 +206,55 @@ func run(cmd *cobra.Command, args []string) {
 		gw.Run(ctx, wg)
 	}(wg)
 
-	grpc := server.NewGrpc(&cfg.GRPC, logger, validator, dslReader)
+	grpc := server.NewGrpc(&cfg.GRPC, logger, validator, dslReader, slaveManager)
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		logger.Info("🚀 grpc server: starting..")
-		grpc.Run(ctx, wg)
+		grpc.Run(ctx, wg, cfg.Mode)
 	}(wg)
+
+	if cfg.Mode == "slave" {
+		go func() {
+			registerSlave(ctx, cfg, logger)
+		}()
+	}
 
 	wg.Wait()
 	logger.Info("🛑 all server: stopped")
+}
+
+func registerSlave(ctx context.Context, cfg config.Config, logger *slog.Logger) {
+	var opts []grpc.DialOption
+
+	if cfg.Slave.MasterGRPCTLSEnabled {
+		creds := credentials.NewTLS(&tls.Config{})
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	}
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), grpc.WithTimeout(5*time.Second))
+
+	conn, err := grpc.Dial(cfg.Slave.MasterGRPCAddr, opts...)
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	client := pbSlave.NewSlaveServiceClient(conn)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.Tick(5 * time.Second):
+			_, err := client.Register(ctx, &pbSlave.RegisterRequest{
+				Id:            cfg.Slave.Id,
+				Address:       cfg.GRPC.Addr,
+				ValidationIds: []string{"validation1", "validation2"},
+			})
+			if err != nil {
+				logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to register to master")).Error())
+			} else {
+				logger.Info(fmt.Sprintf("📓 slave (%s) registration success", cfg.Slave.Id))
+			}
+		}
+	}
 }

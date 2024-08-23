@@ -1,10 +1,18 @@
 package config
 
 type Config struct {
+	Mode  string      `yaml:"mode"`
+	Slave SlaveConfig `yaml:"slave"`
 	Http  HttpConfig  `yaml:"http"`
 	GRPC  GRPCConfig  `yaml:"grpc"`
 	Store StoreConfig `yaml:"store"`
 	Log   LogConfig   `yaml:"log"`
+}
+
+type SlaveConfig struct {
+	Id                   string `yaml:"id"`
+	MasterGRPCTLSEnabled bool   `yaml:"masterGRPCTLSEnabled"`
+	MasterGRPCAddr       string `yaml:"masterGRPCAddr"`
 }
 
 type HttpConfig struct {
@@ -43,6 +51,12 @@ type TLSConfig struct {
 
 func DefaultConfig() *Config {
 	return &Config{
+		Mode: "master",
+		Slave: SlaveConfig{
+			Id:                   "",
+			MasterGRPCAddr:       "",
+			MasterGRPCTLSEnabled: false,
+		},
 		Http: HttpConfig{
 			Addr:               ":8080",
 			CORSAllowedOrigins: []string{"*"},

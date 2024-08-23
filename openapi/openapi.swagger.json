@@ -69,7 +69,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/RegisterResponse"
+              "$ref": "#/definitions/dsl.v1.RegisterResponse"
             }
           }
         },
@@ -79,12 +79,39 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/RegisterRequest"
+              "$ref": "#/definitions/dsl.v1.RegisterRequest"
             }
           }
         ],
         "tags": [
           "DSL"
+        ]
+      }
+    },
+    "/v1/slave/register": {
+      "post": {
+        "summary": "Register Slave Node",
+        "operationId": "Register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/slave.v1.RegisterResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/slave.v1.RegisterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Slave"
         ]
       }
     }
@@ -159,21 +186,6 @@
         }
       }
     },
-    "RegisterRequest": {
-      "type": "object",
-      "properties": {
-        "validations": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/dsl.v1.Validation"
-          }
-        }
-      }
-    },
-    "RegisterResponse": {
-      "type": "object"
-    },
     "ValidationResult": {
       "type": "object",
       "properties": {
@@ -207,6 +219,21 @@
         "name",
         "type"
       ]
+    },
+    "dsl.v1.RegisterRequest": {
+      "type": "object",
+      "properties": {
+        "validations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/dsl.v1.Validation"
+          }
+        }
+      }
+    },
+    "dsl.v1.RegisterResponse": {
+      "type": "object"
     },
     "dsl.v1.Validation": {
       "type": "object",
@@ -242,6 +269,31 @@
         "cels",
         "variables"
       ]
+    },
+    "slave.v1.RegisterRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "validationIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "address",
+        "validationIds"
+      ]
+    },
+    "slave.v1.RegisterResponse": {
+      "type": "object"
     },
     "validate.v1.Validation": {
       "type": "object",

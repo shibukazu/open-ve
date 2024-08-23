@@ -13,37 +13,45 @@ import (
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	svcDSL "github.com/shibukazu/open-ve/go/pkg/services/dsl/v1"
+	svcSlave "github.com/shibukazu/open-ve/go/pkg/services/slave/v1"
 	svcValidate "github.com/shibukazu/open-ve/go/pkg/services/validate/v1"
+	"github.com/shibukazu/open-ve/go/pkg/slave"
 	"github.com/shibukazu/open-ve/go/pkg/validator"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
+	pbSlave "github.com/shibukazu/open-ve/go/proto/slave/v1"
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
 )
 
 type GRPC struct {
-	dslReader  *reader.DSLReader
-	validator  *validator.Validator
-	gRPCConfig *config.GRPCConfig
-	logger     *slog.Logger
-	server     *grpc.Server
+	dslReader    *reader.DSLReader
+	validator    *validator.Validator
+	slaveManager *slave.SlaveManager
+	gRPCConfig   *config.GRPCConfig
+	logger       *slog.Logger
+	server       *grpc.Server
 }
 
 func NewGrpc(
 	gRPCConfig *config.GRPCConfig,
 	logger *slog.Logger,
-	validator *validator.Validator, dslReader *reader.DSLReader) *GRPC {
+	validator *validator.Validator,
+	dslReader *reader.DSLReader,
+	slaveManager *slave.SlaveManager,
+) *GRPC {
 	return &GRPC{
-		validator:  validator,
-		dslReader:  dslReader,
-		gRPCConfig: gRPCConfig,
-		logger:     logger,
+		validator:    validator,
+		dslReader:    dslReader,
+		slaveManager: slaveManager,
+		gRPCConfig:   gRPCConfig,
+		logger:       logger,
 	}
 }
 
-func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
 	listen, err := net.Listen("tcp", g.gRPCConfig.Addr)
 	if err != nil {
@@ -70,6 +78,11 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	dslService := svcDSL.NewService(ctx, g.dslReader)
 	pbDSL.RegisterDSLServiceServer(g.server, dslService)
+
+	if mode == "master" {
+		slaveService := svcSlave.NewService(ctx, g.slaveManager)
+		pbSlave.RegisterSlaveServiceServer(g.server, slaveService)
+	}
 
 	reflection.Register(g.server)
 
