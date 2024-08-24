@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  api-test:
+  api-test-monolithic:
     runs-on: ubuntu-latest
     services:
       docker:
@@ -20,7 +20,6 @@ jobs:
       - name: "Install Deps"
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker-compose
           go mod download
           go install github.com/k1LoW/runn/cmd/runn@latest
       - name: "Start Server"
@@ -28,5 +27,30 @@ jobs:
           go run go/cmd/open-ve/main.go run --http-port=8080 &
       - name: "Run runn"
         run: |
-          export ENDPOINT=http://0.0.0.0:8080
-          make api-test
+          export MONOLITHIC_ENDPOINT=http://0.0.0.0:8080
+          make api-test-monolithic
+  api-test-master-slave:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:19.03.12
+        options: --privileged
+    steps:
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.22.2
+      - name: "Install Deps"
+        run: |
+          sudo apt-get update
+          go mod download
+          go install github.com/k1LoW/runn/cmd/runn@latest
+      - name: "Start Master and Slave Server"
+        run: |
+          go run go/cmd/open-ve/main.go run --mode=master --http-port=8081 --grpc-port=9001 &
+          go run go/cmd/open-ve/main.go run --mode=slave --slave-id=slave-node-id --slave-master-http-addr=http://localhost:8081 --slave-slave-http-addr=http://localhost:8082 --http-port=8082 --grpc-port=9002 &
+      - name: "Run runn"
+        run: |
+          export MASTER_ENDPOINT=http://0.0.0.0:8081
+          export SLAVE_ENDPOINT=http://0.0.0.0:8082
+          make api-test-master-slave

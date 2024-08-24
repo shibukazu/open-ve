@@ -1,0 +1,65 @@
+desc: Valite Data
+runners:
+  req: ${MONOLITHIC_ENDPOINT}
+steps:
+  - desc: Register DSL
+    req:
+      /v1/dsl:
+        post:
+          body:
+            application/json:
+              validations:
+                - cels:
+                    - price > 0
+                    - size(image) < 360
+                  id: item
+                  variables:
+                    - name: price
+                      type: int
+                    - name: image
+                      type: bytes
+                - cels:
+                    - size(name) < 20
+                  id: user
+                  variables:
+                    - name: name
+                      type: string
+
+  - desc: Validate Data (Invalid)
+    req:
+      /v1/check:
+        post:
+          body:
+            application/json:
+              validations:
+                - id: item
+                  variables:
+                    image: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC
+                    price: -100
+                - id: user
+                  variables:
+                    name: longlonglonglongname
+
+    test: |
+      current.res.status == 200
+      && find(current.res.body.results, #.id == "item").isValid == false && find(current.res.body.results, #.id == "item").message == "failed validations: price > 0"
+      && find(current.res.body.results, #.id == "user").isValid == false && find(current.res.body.results, #.id == "user").message == "failed validations: size(name) < 20"
+
+  - desc: Validate Data (Valid)
+    req:
+      /v1/check:
+        post:
+          body:
+            application/json:
+              validations:
+                - id: item
+                  variables:
+                    image: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC
+                    price: 100
+                - id: user
+                  variables:
+                    name: longlonglonglongnam
+    test: |
+      current.res.status == 200
+      && find(current.res.body.results, #.id == "item").isValid == true
+      && find(current.res.body.results, #.id == "user").isValid == true

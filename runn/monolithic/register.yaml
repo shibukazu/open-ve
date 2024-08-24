@@ -1,6 +1,6 @@
-desc: Register DSL`
+desc: Register DSL
 runners:
-  req: ${ENDPOINT}
+  req: ${MONOLITHIC_ENDPOINT}
 steps:
   - desc: Register DSL
     req:

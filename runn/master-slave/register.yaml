@@ -1,0 +1,40 @@
+desc: Register DSL
+runners:
+  reqMaster: ${MASTER_ENDPOINT}
+  reqSlave: ${SLAVE_ENDPOINT}
+steps:
+  - desc: Register a Set of Validation Rules to Master Node
+    reqMaster:
+      /v1/dsl:
+        post:
+          body:
+            application/json:
+              validations:
+                - cels:
+                    - size(name) < 20
+                  id: user
+                  variables:
+                    - name: name
+                      type: string
+    test: |
+      current.res.status == 200
+      && current.res.body == {}
+  - desc: Register a Set of Validation Rules to Slave Node
+    reqSlave:
+      /v1/dsl:
+        post:
+          body:
+            application/json:
+              validations:
+                - cels:
+                    - price > 0
+                    - size(image) < 360
+                  id: item
+                  variables:
+                    - name: price
+                      type: int
+                    - name: image
+                      type: bytes
+    test: |
+      current.res.status == 200
+      && current.res.body == {}
