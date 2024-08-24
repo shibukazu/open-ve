@@ -105,9 +105,9 @@ Open-VE supports a master-slave architecture designed for scalability and compat
 
 In slave mode, Open-VE connects to the master server and syncs validation rules every 30 seconds.
 
-When a validation check request is made to the master server, it distributes the request across the connected slave servers.
+When a validation check request is made to the master server, it redirects the request across the connected slave servers.
 
-Additionally, you can directly request validation checks from the slave servers.
+Additionally, you can directly request validation checks to the slave servers.
 
 ![micro-validator](https://github.com/user-attachments/assets/e248d40c-bcc7-4219-a65a-5b243e101000)
 
