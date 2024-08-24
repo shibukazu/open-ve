@@ -203,6 +203,7 @@ func run(cmd *cobra.Command, args []string) {
 	dslReader := reader.NewDSLReader(logger, store)
 	validator := validator.NewValidator(logger, store)
 	slaveManager := slave.NewSlaveManager(logger)
+	slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveHTTPAddr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterHTTPAddr, cfg.Slave.MasterHTTPTLSEnabled, dslReader, logger)
 
 	gw := server.NewGateway(cfg.Mode, &cfg.Http, &cfg.GRPC, logger, dslReader, slaveManager)
 	wg.Add(1)
@@ -213,7 +214,7 @@ func run(cmd *cobra.Command, args []string) {
 		gw.Run(ctx, wg)
 	}(wg)
 
-	grpc := server.NewGrpc(&cfg.GRPC, logger, validator, dslReader, slaveManager)
+	grpc := server.NewGrpc(cfg.Mode, &cfg.GRPC, logger, validator, dslReader, slaveManager, slaveRegistrar)
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		logger.Info("🚀 grpc server: starting..")
@@ -222,7 +223,6 @@ func run(cmd *cobra.Command, args []string) {
 
 	if cfg.Mode == "slave" {
 		wg.Add(1)
-		slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveHTTPAddr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterHTTPAddr, cfg.Slave.MasterHTTPTLSEnabled, dslReader, logger)
 		go func(wg *sync.WaitGroup) {
 			logger.Info("🚀 slave registration timer: starting..")
 			slaveRegistrar.RegisterTimer(ctx, wg)
