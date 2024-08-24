@@ -1,0 +1,61 @@
+desc: Read DSL
+runners:
+  reqMaster: ${MASTER_ENDPOINT}
+  reqSlave: ${SLAVE_ENDPOINT}
+steps:
+  - desc: Register a Set of Validation Rules to Master Node
+    reqMaster:
+      /v1/dsl:
+        post:
+          body:
+            application/json:
+              validations:
+                - cels:
+                    - size(name) < 20
+                  id: user
+                  variables:
+                    - name: name
+                      type: string
+  - desc: Register a Set of Validation Rules to Slave Node
+    reqSlave:
+      /v1/dsl:
+        post:
+          body:
+            application/json:
+              validations:
+                - cels:
+                    - price > 0
+                    - size(image) < 360
+                  id: item
+                  variables:
+                    - name: price
+                      type: int
+                    - name: image
+                      type: bytes
+
+  - desc: Read DSL from Master Node
+    reqMaster:
+      /v1/dsl:
+        get:
+          body:
+            application/json: null
+    test: |
+      current.res.status == 200
+      && find(current.res.body.validations, #.id == "user").cels[0] == "size(name) < 20"
+      && find(current.res.body.validations, #.id == "user").variables[0].name == "name"
+      && find(current.res.body.validations, #.id == "user").variables[0].type == "string"
+
+  - desc: Read DSL from Slave Node
+    reqSlave:
+      /v1/dsl:
+        get:
+          body:
+            application/json: null
+    test: |
+      current.res.status == 200
+      && find(current.res.body.validations, #.id == "item").cels[0] == "price > 0"
+      && find(current.res.body.validations, #.id == "item").cels[1] == "size(image) < 360"
+      && find(current.res.body.validations, #.id == "item").variables[0].name == "price"
+      && find(current.res.body.validations, #.id == "item").variables[0].type == "int"
+      && find(current.res.body.validations, #.id == "item").variables[1].name == "image"
+      && find(current.res.body.validations, #.id == "item").variables[1].type == "bytes"

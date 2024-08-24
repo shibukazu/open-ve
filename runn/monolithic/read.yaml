@@ -1,6 +1,6 @@
-desc: Read DSL`
+desc: Read DSL
 runners:
-  req: ${ENDPOINT}
+  req: ${MONOLITHIC_ENDPOINT}
 steps:
   - desc: Register DSL
     req:

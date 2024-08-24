@@ -17,6 +17,9 @@ func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 	if err := s.dslReader.Register(ctx, dsl); err != nil {
 		return nil, appError.ToGRPCError(err)
 	}
+	if s.mode == "slave" {
+		s.slaveRegistrar.Register(ctx)
+	}
 
 	return &pb.RegisterResponse{}, nil
 }

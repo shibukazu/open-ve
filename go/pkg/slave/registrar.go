@@ -51,7 +51,7 @@ func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, master
 
 func (s *SlaveRegistrar) RegisterTimer(ctx context.Context, wg *sync.WaitGroup) {
 	s.logger.Info("🟢 slave registration timer started")
-	s.register(ctx)
+	s.Register(ctx)
 	ticker := time.NewTicker(30 * time.Second)
 	for {
 		select {
@@ -61,12 +61,12 @@ func (s *SlaveRegistrar) RegisterTimer(ctx context.Context, wg *sync.WaitGroup) 
 			wg.Done()
 			return
 		case <-ticker.C:
-			s.register(ctx)
+			s.Register(ctx)
 		}
 	}
 }
 
-func (s *SlaveRegistrar) register(ctx context.Context) {
+func (s *SlaveRegistrar) Register(ctx context.Context) {
 	dsl, err := s.dslReader.Read(ctx)
 	if err != nil {
 		s.logger.Error(err.Error())

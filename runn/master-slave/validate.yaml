@@ -1,9 +1,23 @@
-desc: Valite Data`
+desc: Valite Data
 runners:
-  req: ${ENDPOINT}
+  reqMaster: ${MASTER_ENDPOINT}
+  reqSlave: ${SLAVE_ENDPOINT}
 steps:
-  - desc: Register DSL
-    req:
+  - desc: Register a Set of Validation Rules to Master Node
+    reqMaster:
+      /v1/dsl:
+        post:
+          body:
+            application/json:
+              validations:
+                - cels:
+                    - size(name) < 20
+                  id: user
+                  variables:
+                    - name: name
+                      type: string
+  - desc: Register a Set of Validation Rules to Slave Node
+    reqSlave:
       /v1/dsl:
         post:
           body:
@@ -18,15 +32,9 @@ steps:
                       type: int
                     - name: image
                       type: bytes
-                - cels:
-                    - size(name) < 20
-                  id: user
-                  variables:
-                    - name: name
-                      type: string
 
-  - desc: Validate Data (InValid)
-    req:
+  - desc: Request Validation to Master (Invalid)
+    reqMaster:
       /v1/check:
         post:
           body:
@@ -45,8 +53,8 @@ steps:
       && find(current.res.body.results, #.id == "item").isValid == false && find(current.res.body.results, #.id == "item").message == "failed validations: price > 0"
       && find(current.res.body.results, #.id == "user").isValid == false && find(current.res.body.results, #.id == "user").message == "failed validations: size(name) < 20"
 
-  - desc: Validate Data (Valid)
-    req:
+  - desc: Request Validation to Master (Valid)
+    reqMaster:
       /v1/check:
         post:
           body:
@@ -63,3 +71,35 @@ steps:
       current.res.status == 200
       && find(current.res.body.results, #.id == "item").isValid == true
       && find(current.res.body.results, #.id == "user").isValid == true
+
+  - desc: Request Validation to Slave (Invalid)
+    reqSlave:
+      /v1/check:
+        post:
+          body:
+            application/json:
+              validations:
+                - id: item
+                  variables:
+                    image: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC
+                    price: -100
+
+    test: |
+      current.res.status == 200
+      && find(current.res.body.results, #.id == "item").isValid == false && find(current.res.body.results, #.id == "item").message == "failed validations: price > 0"
+
+  - desc: Request Validation to Slave (Valid)
+    reqSlave:
+      /v1/check:
+        post:
+          body:
+            application/json:
+              validations:
+                - id: item
+                  variables:
+                    image: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGO4unY2AAR4Ah51j5XwAAAAAElFTkSuQmCC
+                    price: 100
+
+    test: |
+      current.res.status == 200
+      && find(current.res.body.results, #.id == "item").isValid == true

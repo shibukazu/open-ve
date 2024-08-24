@@ -1,4 +1,4 @@
-# Master-SlaveExample
+# Master-Slave Example
 
 This example demonstrates how to run the Open-VE as master-slave architecture.
 

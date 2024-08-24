@@ -13,6 +13,7 @@ import (
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	svcDSL "github.com/shibukazu/open-ve/go/pkg/services/dsl/v1"
+	svcHealth "github.com/shibukazu/open-ve/go/pkg/services/health/v1"
 	svcSlave "github.com/shibukazu/open-ve/go/pkg/services/slave/v1"
 	svcValidate "github.com/shibukazu/open-ve/go/pkg/services/validate/v1"
 	"github.com/shibukazu/open-ve/go/pkg/slave"
@@ -24,30 +25,37 @@ import (
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 	pbSlave "github.com/shibukazu/open-ve/go/proto/slave/v1"
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
+	pbHealth "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type GRPC struct {
-	dslReader    *reader.DSLReader
-	validator    *validator.Validator
-	slaveManager *slave.SlaveManager
-	gRPCConfig   *config.GRPCConfig
-	logger       *slog.Logger
-	server       *grpc.Server
+	mode           string
+	dslReader      *reader.DSLReader
+	validator      *validator.Validator
+	slaveManager   *slave.SlaveManager
+	slaveRegistrar *slave.SlaveRegistrar
+	gRPCConfig     *config.GRPCConfig
+	logger         *slog.Logger
+	server         *grpc.Server
 }
 
 func NewGrpc(
+	mode string,
 	gRPCConfig *config.GRPCConfig,
 	logger *slog.Logger,
 	validator *validator.Validator,
 	dslReader *reader.DSLReader,
 	slaveManager *slave.SlaveManager,
+	slaveRegistrar *slave.SlaveRegistrar,
 ) *GRPC {
 	return &GRPC{
-		validator:    validator,
-		dslReader:    dslReader,
-		slaveManager: slaveManager,
-		gRPCConfig:   gRPCConfig,
-		logger:       logger,
+		mode:           mode,
+		validator:      validator,
+		dslReader:      dslReader,
+		slaveManager:   slaveManager,
+		slaveRegistrar: slaveRegistrar,
+		gRPCConfig:     gRPCConfig,
+		logger:         logger,
 	}
 }
 
@@ -76,8 +84,11 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 	validateService := svcValidate.NewService(ctx, g.validator)
 	pbValidate.RegisterValidateServiceServer(g.server, validateService)
 
-	dslService := svcDSL.NewService(ctx, g.dslReader)
+	dslService := svcDSL.NewService(ctx, mode, g.dslReader, g.slaveRegistrar)
 	pbDSL.RegisterDSLServiceServer(g.server, dslService)
+
+	healthService := svcHealth.NewService(ctx)
+	pbHealth.RegisterHealthServer(g.server, healthService)
 
 	if mode == "master" {
 		slaveService := svcSlave.NewService(ctx, g.slaveManager)

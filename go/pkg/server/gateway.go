@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	pbHealth "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type Gateway struct {
@@ -56,8 +57,6 @@ func NewGateway(
 }
 
 func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
-	grpcGateway := runtime.NewServeMux()
-
 	dialOpts := []grpc.DialOption{}
 
 	if g.gRPCConfig.TLS.Enabled {
@@ -72,6 +71,18 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 	} else {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
+
+	conn, err := grpc.NewClient(":"+g.gRPCConfig.Port, dialOpts...)
+	if err != nil {
+		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to dial gRPC server")))
+	}
+	defer conn.Close()
+
+	runtime.DefaultContextTimeout = 10 * time.Second
+	muxOpts := []runtime.ServeMuxOption{
+		runtime.WithHealthzEndpoint(pbHealth.NewHealthClient(conn)),
+	}
+	grpcGateway := runtime.NewServeMux(muxOpts...)
 
 	if err := pbValidate.RegisterValidateServiceHandlerFromEndpoint(ctx, grpcGateway, ":"+g.gRPCConfig.Port, dialOpts); err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register validate service on gateway")))
