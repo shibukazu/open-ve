@@ -72,7 +72,7 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	conn, err := grpc.DialContext(ctx, ":"+g.gRPCConfig.Port, dialOpts...)
+	conn, err := grpc.NewClient(":"+g.gRPCConfig.Port, dialOpts...)
 	if err != nil {
 		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to dial gRPC server")))
 	}
