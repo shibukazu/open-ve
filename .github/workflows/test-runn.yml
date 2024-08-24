@@ -25,6 +25,20 @@ jobs:
       - name: "Start Server"
         run: |
           go run go/cmd/open-ve/main.go run --http-port=8080 &
+      - name: "Health Check"
+        run: |
+          for i in {1..10}; do
+            STATUS=$(curl -s http://localhost:8080/healthz | jq -r .status)
+            echo "Health check status: $STATUS"
+            if [ "$STATUS" == "SERVING" ]; then
+              echo "Service is healthy!"
+              exit 0
+            fi
+            echo "Waiting for the service to be healthy..."
+            sleep 3
+          done
+          echo "Service did not become healthy in time."
+          exit 1
       - name: "Run runn"
         run: |
           export MONOLITHIC_ENDPOINT=http://0.0.0.0:8080
@@ -49,6 +63,21 @@ jobs:
         run: |
           go run go/cmd/open-ve/main.go run --mode=master --http-port=8081 --grpc-port=9001 &
           go run go/cmd/open-ve/main.go run --mode=slave --slave-id=slave-node-id --slave-master-http-addr=http://localhost:8081 --slave-slave-http-addr=http://localhost:8082 --http-port=8082 --grpc-port=9002 &
+      - name: "Health Check"
+        run: |
+          for i in {1..10}; do
+            MASTER_STATUS=$(curl -s http://localhost:8081/healthz | jq -r .status)
+            SLAVE_STATUS=$(curl -s http://localhost:8082/healthz | jq -r .status)
+            echo "Health check status: Master->$STATUS Slave->$SLAVE_STATUS"
+            if [ "$MASTER_STATUS" == "SERVING" ] && [ "$SLAVE_STATUS" == "SERVING" ]; then
+              echo "Service is healthy!"
+              exit 0
+            fi
+            echo "Waiting for the service to be healthy..."
+            sleep 3
+          done
+          echo "Service did not become healthy in time."
+          exit 1
       - name: "Run runn"
         run: |
           export MASTER_ENDPOINT=http://0.0.0.0:8081

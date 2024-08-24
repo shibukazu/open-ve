@@ -13,6 +13,7 @@ import (
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	svcDSL "github.com/shibukazu/open-ve/go/pkg/services/dsl/v1"
+	svcHealth "github.com/shibukazu/open-ve/go/pkg/services/health/v1"
 	svcSlave "github.com/shibukazu/open-ve/go/pkg/services/slave/v1"
 	svcValidate "github.com/shibukazu/open-ve/go/pkg/services/validate/v1"
 	"github.com/shibukazu/open-ve/go/pkg/slave"
@@ -24,6 +25,7 @@ import (
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 	pbSlave "github.com/shibukazu/open-ve/go/proto/slave/v1"
 	pbValidate "github.com/shibukazu/open-ve/go/proto/validate/v1"
+	pbHealth "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type GRPC struct {
@@ -78,6 +80,9 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
 	dslService := svcDSL.NewService(ctx, g.dslReader)
 	pbDSL.RegisterDSLServiceServer(g.server, dslService)
+
+	healthService := svcHealth.NewService(ctx)
+	pbHealth.RegisterHealthServer(g.server, healthService)
 
 	if mode == "master" {
 		slaveService := svcSlave.NewService(ctx, g.slaveManager)
