@@ -29,13 +29,12 @@ jobs:
         run: |
           for i in {1..10}; do
             STATUS=$(curl -s http://localhost:8080/healthz | jq -r .status)
-            echo "Health check status: $STATUS"
             if [ "$STATUS" == "SERVING" ]; then
               echo "Service is healthy!"
               exit 0
             fi
             echo "Waiting for the service to be healthy..."
-            sleep 3
+            sleep 5
           done
           echo "Service did not become healthy in time."
           exit 1
@@ -68,13 +67,12 @@ jobs:
           for i in {1..10}; do
             MASTER_STATUS=$(curl -s http://localhost:8081/healthz | jq -r .status)
             SLAVE_STATUS=$(curl -s http://localhost:8082/healthz | jq -r .status)
-            echo "Health check status: Master->$STATUS Slave->$SLAVE_STATUS"
             if [ "$MASTER_STATUS" == "SERVING" ] && [ "$SLAVE_STATUS" == "SERVING" ]; then
               echo "Service is healthy!"
               exit 0
             fi
             echo "Waiting for the service to be healthy..."
-            sleep 3
+            sleep 5
           done
           echo "Service did not become healthy in time."
           exit 1
