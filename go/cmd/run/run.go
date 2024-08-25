@@ -71,10 +71,6 @@ func NewRunCommand() *cobra.Command {
 	MustBindPFlag("slave.masterHTTPAddr", flags.Lookup("slave-master-http-addr"))
 	viper.MustBindEnv("slave.masterHTTPAddr", "OPEN-VE_SLAVE_MASTER_HTTP_ADDR")
 
-	flags.Bool("slave-master-http-tls-enabled", defaultConfig.Slave.MasterHTTPTLSEnabled, "connect to master server with TLS")
-	MustBindPFlag("slave.masterHTTPTLSEnabled", flags.Lookup("slave-master-http-tls-enabled"))
-	viper.MustBindEnv("slave.masterHTTPTLSEnabled", "OPEN-VE_SLAVE_MASTER_HTTP_TLS_ENABLED")
-
 	// HTTP
 	flags.String("http-port", defaultConfig.Http.Port, "HTTP server port")
 	MustBindPFlag("http.port", flags.Lookup("http-port"))
@@ -203,7 +199,7 @@ func run(cmd *cobra.Command, args []string) {
 	dslReader := reader.NewDSLReader(logger, store)
 	validator := validator.NewValidator(logger, store)
 	slaveManager := slave.NewSlaveManager(logger)
-	slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveHTTPAddr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterHTTPAddr, cfg.Slave.MasterHTTPTLSEnabled, dslReader, logger)
+	slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveHTTPAddr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterHTTPAddr, dslReader, logger)
 
 	gw := server.NewGateway(cfg.Mode, &cfg.Http, &cfg.GRPC, logger, dslReader, slaveManager)
 	wg.Add(1)

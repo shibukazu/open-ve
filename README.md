@@ -12,35 +12,39 @@ Open-VE offers an HTTP API and a gRPC API. We will provide a client SDK in the f
 > [!IMPORTANT]  
 > This project is still under development and not ready for production use.
 
+## Example
+
+- [Example of Master Slave Architecture](docs/Master-Slave-Example.md)
+- [Example of Monolithic Architecture](docs/Monolithic-Example.md)
+
 ## Getting Started
 
 ### Config
 
 #### 1. CLI Flags or Environment Variables
 
-| CLI Args                      | Env                                 | Default      | Desc                                                                   |
-| ----------------------------- | ----------------------------------- | ------------ | ---------------------------------------------------------------------- |
-| `--mode`                      | `OPEN-VE_MODE`                      | `master`     | master or slave                                                        |
-| `--slave-id`                  | `OPEN-VE_SLAVE_ID`                  |              | Unique slave ID (if mode is slave, this is required)                   |
-| `--slave-slave-http-addr`     | `OPEN-VE_SLAVE_SLAVE_HTTP_ADDR`     |              | HTTP server address (if mode is slave, this is required)               |
-| `--slave-master-http-addr`    | `OPEN-VE_SLAVE_MASTER_HTTP_ADDR`    |              | Master HTTP server address (if mode is slave, this is required)        |
-| `--slave-master-tsl-enabled`  | `OPEN-VE_SLAVE_MASTER_TLS_ENABLED`  | `false`      | Connect to master server with TLS (if mode is slave, this is required) |
-| `--http-port`                 | `OPEN-VE_HTTP_PORT`                 | `8080`       | HTTP server port number                                                |
-| `--http-cors-allowed-origins` | `OPEN-VE_HTTP_CORS_ALLOWED_ORIGINS` | `["*"]`      | CORS allowed origins                                                   |
-| `--http-cors-allowed-headers` | `OPEN-VE_HTTP_CORS_ALLOWED_HEADERS` | `["*"]`      | CORS allowed headers                                                   |
-| `--http-tls-enabled`          | `OPEN-VE_HTTP_TLS_ENABLED`          | `false`      | HTTP server TLS enabled                                                |
-| `--http-tls-cert-path`        | `OPEN-VE_HTTP_TLS_CERT_PATH`        | `""`         | HTTP server TLS cert path                                              |
-| `--http-tls-key-path`         | `OPEN-VE_HTTP_TLS_KEY_PATH`         | `""`         | HTTP server TLS key path                                               |
-| `--grpc-port`                 | `OPEN-VE_GRPC_ADDR`                 | `:9000`      | gRPC server port number                                                |
-| `--grpc-tls-enabled`          | `OPEN-VE_GRPC_TLS_ENABLED`          | `false`      | gRPC server TLS enabled                                                |
-| `--grpc-tls-cert-path`        | `OPEN-VE_GRPC_TLS_CERT_PATH`        | `""`         | gRPC server TLS cert path                                              |
-| `--grpc-tls-key-path`         | `OPEN-VE_GRPC_TLS_KEY_PATH`         | `""`         | gRPC server TLS key path                                               |
-| `--store-engine`              | `OPEN-VE_STORE_ENGINE`              | `memory`     | store engine (redis/memory)                                            |
-| `--store-redis-addr`          | `OPEN-VE_STORE_REDIS_ADDR`          | `redis:6379` | Redis address                                                          |
-| `--store-redis-password`      | `OPEN-VE_STORE_REDIS_PASSWORD`      | `""`         | Redis password                                                         |
-| `--store-redis-db`            | `OPEN-VE_STORE_REDIS_DB`            | `0`          | Redis DB                                                               |
-| `--store-redis-pool-size`     | `OPEN-VE_STORE_REDIS_POOL_SIZE`     | `1000`       | Redis pool size                                                        |
-| `--log-level`                 | `OPEN-VE_LOG_LEVEL`                 | `info`       | Log level                                                              |
+| CLI Args                      | Env                                 | Default      | Desc                                                            |
+| ----------------------------- | ----------------------------------- | ------------ | --------------------------------------------------------------- |
+| `--mode`                      | `OPEN-VE_MODE`                      | `master`     | master or slave                                                 |
+| `--slave-id`                  | `OPEN-VE_SLAVE_ID`                  |              | Unique slave ID (if mode is slave, this is required)            |
+| `--slave-slave-http-addr`     | `OPEN-VE_SLAVE_SLAVE_HTTP_ADDR`     |              | HTTP server address (if mode is slave, this is required)        |
+| `--slave-master-http-addr`    | `OPEN-VE_SLAVE_MASTER_HTTP_ADDR`    |              | Master HTTP server address (if mode is slave, this is required) |
+| `--http-port`                 | `OPEN-VE_HTTP_PORT`                 | `8080`       | HTTP server port number                                         |
+| `--http-cors-allowed-origins` | `OPEN-VE_HTTP_CORS_ALLOWED_ORIGINS` | `["*"]`      | CORS allowed origins                                            |
+| `--http-cors-allowed-headers` | `OPEN-VE_HTTP_CORS_ALLOWED_HEADERS` | `["*"]`      | CORS allowed headers                                            |
+| `--http-tls-enabled`          | `OPEN-VE_HTTP_TLS_ENABLED`          | `false`      | HTTP server TLS enabled                                         |
+| `--http-tls-cert-path`        | `OPEN-VE_HTTP_TLS_CERT_PATH`        |              | HTTP server TLS cert path                                       |
+| `--http-tls-key-path`         | `OPEN-VE_HTTP_TLS_KEY_PATH`         |              | HTTP server TLS key path                                        |
+| `--grpc-port`                 | `OPEN-VE_GRPC_ADDR`                 | `9000`       | gRPC server port number                                         |
+| `--grpc-tls-enabled`          | `OPEN-VE_GRPC_TLS_ENABLED`          | `false`      | gRPC server TLS enabled                                         |
+| `--grpc-tls-cert-path`        | `OPEN-VE_GRPC_TLS_CERT_PATH`        |              | gRPC server TLS cert path                                       |
+| `--grpc-tls-key-path`         | `OPEN-VE_GRPC_TLS_KEY_PATH`         |              | gRPC server TLS key path                                        |
+| `--store-engine`              | `OPEN-VE_STORE_ENGINE`              | `memory`     | store engine (redis/memory)                                     |
+| `--store-redis-addr`          | `OPEN-VE_STORE_REDIS_ADDR`          | `redis:6379` | Redis address                                                   |
+| `--store-redis-password`      | `OPEN-VE_STORE_REDIS_PASSWORD`      |              | Redis password                                                  |
+| `--store-redis-db`            | `OPEN-VE_STORE_REDIS_DB`            | `0`          | Redis DB                                                        |
+| `--store-redis-pool-size`     | `OPEN-VE_STORE_REDIS_POOL_SIZE`     | `1000`       | Redis pool size                                                 |
+| `--log-level`                 | `OPEN-VE_LOG_LEVEL`                 | `info`       | Log level                                                       |
 
 #### 2. Config File
 
@@ -131,8 +135,6 @@ Supported types:
 | message names |         | ❓             |
 | `type`        |         | ❓             |
 
-## Examples
+## Documents
 
-- [Example of Master Slave Architecture](docs/Master-Slave-Example.md)
-
-- [Example of Monolithic Architecture](docs/Monolithic-Example.md)
+- [Try TLS Connection (on Master-Slave Architecture)](docs/Try-TLS_Connection.md)

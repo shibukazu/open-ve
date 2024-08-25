@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,9 +26,9 @@ type SlaveRegistrar struct {
 	logger            *slog.Logger
 }
 
-func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, masterHTTPAddress string, masterTLSEnabled bool, dslReader *reader.DSLReader, logger *slog.Logger) *SlaveRegistrar {
+func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, masterHTTPAddress string, dslReader *reader.DSLReader, logger *slog.Logger) *SlaveRegistrar {
 	var client *http.Client
-
+	masterTLSEnabled := strings.HasPrefix(masterHTTPAddress, "https")
 	if masterTLSEnabled {
 		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{},
