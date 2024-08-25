@@ -40,6 +40,8 @@ services:
       - OPEN-VE_STORE_REDIS_DB=
       - OPEN-VE_STORE_REDIS_POOL_SIZE=
       - OPEN-VE_LOG_LEVEL=
+      - OPEN-VE_AUTHN_METHOD=
+      - OPEN-VE_AUTHN_PRESHARED_KEY=
   slave-node:
     build:
       context: .
@@ -59,6 +61,8 @@ services:
       - OPEN-VE_SLAVE_ID=slave-node
       - OPEN-VE_SLAVE_SLAVE_HTTP_ADDR=http://slave-node:8080
       - OPEN-VE_SLAVE_MASTER_HTTP_ADDR=http://master-node:8080
+      - OPEN-VE_SLAVE_MASTER_AUTHN_METHOD=
+      - OPEN-VE_SLAVE_MASTER_AUTHN_PRESHARED_KEY=
       - OPEN-VE_HTTP_PORT=
       - OPEN-VE_HTTP_CORS_ALLOWED_ORIGINS=
       - OPEN-VE_HTTP_CORS_ALLOWED_HEADERS=
@@ -75,6 +79,8 @@ services:
       - OPEN-VE_STORE_REDIS_DB=
       - OPEN-VE_STORE_REDIS_POOL_SIZE=
       - OPEN-VE_LOG_LEVEL=
+      - OPEN-VE_AUTHN_METHOD=
+      - OPEN-VE_AUTHN_PRESHARED_KEY=
   apidocs:
     image: swaggerapi/swagger-ui
     container_name: apidocs

@@ -8,8 +8,10 @@ import (
 	"sync"
 	"time"
 
+	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
+	"github.com/shibukazu/open-ve/go/pkg/authn"
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	svcDSL "github.com/shibukazu/open-ve/go/pkg/services/dsl/v1"
@@ -34,6 +36,7 @@ type GRPC struct {
 	validator      *validator.Validator
 	slaveManager   *slave.SlaveManager
 	slaveRegistrar *slave.SlaveRegistrar
+	authenticator  authn.Authenticator
 	gRPCConfig     *config.GRPCConfig
 	logger         *slog.Logger
 	server         *grpc.Server
@@ -47,6 +50,7 @@ func NewGrpc(
 	dslReader *reader.DSLReader,
 	slaveManager *slave.SlaveManager,
 	slaveRegistrar *slave.SlaveRegistrar,
+	authenticator authn.Authenticator,
 ) *GRPC {
 	return &GRPC{
 		mode:           mode,
@@ -54,6 +58,7 @@ func NewGrpc(
 		dslReader:      dslReader,
 		slaveManager:   slaveManager,
 		slaveRegistrar: slaveRegistrar,
+		authenticator:  authenticator,
 		gRPCConfig:     gRPCConfig,
 		logger:         logger,
 	}
@@ -67,7 +72,10 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 	}
 
 	grpcServerOpts := []grpc.ServerOption{}
-	grpcServerOpts = append(grpcServerOpts, grpc.UnaryInterceptor(g.interceptor()))
+	grpcServerOpts = append(grpcServerOpts, grpc.ChainUnaryInterceptor([]grpc.UnaryServerInterceptor{
+		g.accessLogInterceptor(),
+		g.authnInterceptor(),
+	}...))
 	if g.gRPCConfig.TLS.Enabled {
 		if g.gRPCConfig.TLS.CertPath == "" || g.gRPCConfig.TLS.KeyPath == "" {
 			panic(failure.New(appError.ErrServerStartFailed, failure.Message("certPath and keyPath must be set")))
@@ -133,12 +141,23 @@ func (g *GRPC) shutdown(ctx context.Context) {
 	}
 }
 
-func (g *GRPC) interceptor() grpc.UnaryServerInterceptor {
+func (g *GRPC) accessLogInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		// Log the request
 		g.logger.Info("🔍 Access Log", slog.String("Method", info.FullMethod), slog.String("Request", fmt.Sprintf("%+v", req)))
 
 		resp, err := handler(ctx, req)
 		return resp, err
 	}
+}
+
+func (g *GRPC) authnInterceptor() grpc.UnaryServerInterceptor {
+	return grpcauth.UnaryServerInterceptor(
+		func(ctx context.Context) (context.Context, error) {
+			_, err := g.authenticator.Authenticate(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return ctx, nil
+		},
+	)
 }

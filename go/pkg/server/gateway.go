@@ -251,6 +251,11 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 						}
 						req.Header.Set("Content-Type", "application/json")
 
+						switch slaveNode.Authn.Method {
+						case "preshared":
+							req.Header.Set("Authorization", "Bearer "+slaveNode.Authn.Preshared.Key)
+						}
+
 						resp, err := client.Do(req)
 						if err != nil {
 							errCh <- failure.Translate(err, appError.ErrValidateServiceForwardFailed)
