@@ -11,6 +11,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
+	"github.com/shibukazu/open-ve/go/pkg/authn"
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 	"github.com/shibukazu/open-ve/go/pkg/logger"
@@ -70,6 +71,14 @@ func NewRunCommand() *cobra.Command {
 	flags.String("slave-master-http-addr", defaultConfig.Slave.MasterHTTPAddr, "HTTP address of the master server")
 	MustBindPFlag("slave.masterHTTPAddr", flags.Lookup("slave-master-http-addr"))
 	viper.MustBindEnv("slave.masterHTTPAddr", "OPEN-VE_SLAVE_MASTER_HTTP_ADDR")
+
+	flags.String("slave-master-authn-method", defaultConfig.Slave.MasterAuthn.Method, "Authentication method of the master server")
+	MustBindPFlag("slave.masterAuthn.method", flags.Lookup("slave-master-authn-method"))
+	viper.MustBindEnv("slave.masterAuthn.method", "OPEN-VE_SLAVE_MASTER_AUTHN_METHOD")
+
+	flags.String("slave-master-authn-preshared-key-key", defaultConfig.Slave.MasterAuthn.PresharedKey.Key, "Preshared key of the master server")
+	MustBindPFlag("slave.masterAuthn.presharedKey.key", flags.Lookup("slave-master-authn-preshared-key-key"))
+	viper.MustBindEnv("slave.masterAuthn.presharedKey.key", "OPEN-VE_SLAVE_MASTER_AUTHN_PRESHARED_KEY_KEY")
 
 	// HTTP
 	flags.String("http-port", defaultConfig.Http.Port, "HTTP server port")
@@ -131,10 +140,20 @@ func NewRunCommand() *cobra.Command {
 	flags.Int("store-redis-pool-size", defaultConfig.Store.Redis.PoolSize, "Redis pool size")
 	MustBindPFlag("store.redis.poolSize", flags.Lookup("store-redis-pool-size"))
 	viper.MustBindEnv("store.redis.poolSize", "OPEN-VE_STORE_REDIS_POOL_SIZE")
+
 	// Log
 	flags.String("log-level", defaultConfig.Log.Level, "Log level")
 	MustBindPFlag("log.level", flags.Lookup("log-level"))
 	viper.MustBindEnv("log.level", "OPEN-VE_LOG_LEVEL")
+
+	// Authn
+	flags.String("authn-method", defaultConfig.Authn.Method, "Authentication method")
+	MustBindPFlag("authn.method", flags.Lookup("authn-method"))
+	viper.MustBindEnv("authn.method", "OPEN-VE_AUTHN_METHOD")
+
+	flags.String("authn-preshared-key-key", defaultConfig.Authn.PresharedKey.Key, "Preshared key")
+	MustBindPFlag("authn.presharedKey.key", flags.Lookup("authn-preshared-key-key"))
+	viper.MustBindEnv("authn.presharedKey.key", "OPEN-VE_AUTHN_PRESHARED_KEY_KEY")
 
 	return cmd
 }
@@ -199,7 +218,16 @@ func run(cmd *cobra.Command, args []string) {
 	dslReader := reader.NewDSLReader(logger, store)
 	validator := validator.NewValidator(logger, store)
 	slaveManager := slave.NewSlaveManager(logger)
-	slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveHTTPAddr, cfg.GRPC.TLS.Enabled, cfg.Slave.MasterHTTPAddr, dslReader, logger)
+	slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveHTTPAddr, cfg.GRPC.TLS.Enabled, cfg.Authn, cfg.Slave.MasterHTTPAddr, cfg.Slave.MasterAuthn, dslReader, logger)
+	var authenticator authn.Authenticator
+	switch cfg.Authn.Method {
+	case "presharedKey":
+		logger.Info("🔐 authenticator: preshared key")
+		authenticator = authn.NewPresharedKeyAuthenticator(cfg.Authn.PresharedKey.Key)
+	default:
+		logger.Warn("⚠️ authenticator: none")
+		authenticator = &authn.NoopAuthenticator{}
+	}
 
 	gw := server.NewGateway(cfg.Mode, &cfg.Http, &cfg.GRPC, logger, dslReader, slaveManager)
 	wg.Add(1)
@@ -210,7 +238,7 @@ func run(cmd *cobra.Command, args []string) {
 		gw.Run(ctx, wg)
 	}(wg)
 
-	grpc := server.NewGrpc(cfg.Mode, &cfg.GRPC, logger, validator, dslReader, slaveManager, slaveRegistrar)
+	grpc := server.NewGrpc(cfg.Mode, &cfg.GRPC, logger, validator, dslReader, slaveManager, slaveRegistrar, authenticator)
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		logger.Info("🚀 grpc server: starting..")

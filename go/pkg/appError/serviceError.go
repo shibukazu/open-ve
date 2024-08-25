@@ -21,6 +21,9 @@ const (
 
 	ErrDSLServiceDSLSyntaxError = "DSLServiceDSLSyntaxError"
 
+	ErrAuthMissingToken = "AuthMissingToken"
+	ErrAuthUnauthorized = "AuthUnauthorized"
+
 	ErrInternalError = "Internal"
 )
 

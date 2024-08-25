@@ -12,7 +12,18 @@ message RegisterRequest {
   string address = 2 [(google.api.field_behavior) = REQUIRED];
   bool tls_enabled = 3;
   repeated string validation_ids = 4 [(google.api.field_behavior) = REQUIRED];
+  Authn authn = 5;
 }
+
+message Authn {
+  string method = 1;
+  Presharedkey presharedkey = 2;
+}
+
+message Presharedkey {
+  string key = 1;
+}
+
 message RegisterResponse {}
 
 service SlaveService {

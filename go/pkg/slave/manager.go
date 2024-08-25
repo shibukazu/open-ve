@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/morikuni/failure/v2"
+	"github.com/shibukazu/open-ve/go/pkg/config"
 )
 
 type SlaveManager struct {
@@ -19,15 +20,16 @@ type Slave struct {
 	Addr          string
 	TLSEnabled    bool
 	ValidationIds []string
+	Authn         config.AuthnConfig
 }
 
 func NewSlaveManager(logger *slog.Logger) *SlaveManager {
 	return &SlaveManager{Slaves: map[string]*Slave{}, logger: logger}
 }
 
-func (m *SlaveManager) RegisterSlave(id, addr string, tlsEnabled bool, validationIds []string) {
+func (m *SlaveManager) RegisterSlave(id, addr string, tlsEnabled bool, validationIds []string, authn config.AuthnConfig) {
 	m.mu.Lock()
-	m.Slaves[id] = &Slave{Id: id, Addr: addr, ValidationIds: validationIds, TLSEnabled: tlsEnabled}
+	m.Slaves[id] = &Slave{Id: id, Addr: addr, ValidationIds: validationIds, TLSEnabled: tlsEnabled, Authn: authn}
 	m.mu.Unlock()
 }
 

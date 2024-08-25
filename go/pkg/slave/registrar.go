@@ -13,6 +13,7 @@ import (
 
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
+	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
 )
 
@@ -20,13 +21,15 @@ type SlaveRegistrar struct {
 	Id                string
 	SlaveHTTPAddress  string
 	SlaveTLSEnabled   bool
+	SlaveAuthn        config.AuthnConfig
 	MasterHTTPAddress string
+	MasterAuthn       config.AuthnConfig
 	dslReader         *reader.DSLReader
 	httpClient        *http.Client
 	logger            *slog.Logger
 }
 
-func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, masterHTTPAddress string, dslReader *reader.DSLReader, logger *slog.Logger) *SlaveRegistrar {
+func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, slaveAuthn config.AuthnConfig, masterHTTPAddress string, masterAuthn config.AuthnConfig, dslReader *reader.DSLReader, logger *slog.Logger) *SlaveRegistrar {
 	var client *http.Client
 	masterTLSEnabled := strings.HasPrefix(masterHTTPAddress, "https")
 	if masterTLSEnabled {
@@ -43,7 +46,9 @@ func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, master
 		Id:                id,
 		SlaveHTTPAddress:  slaveHTTPAddress,
 		SlaveTLSEnabled:   slaveTLSEnabled,
+		SlaveAuthn:        slaveAuthn,
 		MasterHTTPAddress: masterHTTPAddress,
+		MasterAuthn:       masterAuthn,
 		dslReader:         dslReader,
 		httpClient:        client,
 		logger:            logger,
@@ -82,6 +87,12 @@ func (s *SlaveRegistrar) Register(ctx context.Context) {
 		"address":        s.SlaveHTTPAddress,
 		"tls_enabled":    s.SlaveTLSEnabled,
 		"validation_ids": validationIds,
+		"authn": map[string]interface{}{
+			"method": s.SlaveAuthn.Method,
+			"preshared_key": map[string]interface{}{
+				"key": s.SlaveAuthn.PresharedKey.Key,
+			},
+		},
 	}
 	body, err := json.Marshal(reqBody)
 	if err != nil {
@@ -95,6 +106,11 @@ func (s *SlaveRegistrar) Register(ctx context.Context) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	switch s.MasterAuthn.Method {
+	case "preshared_key":
+		req.Header.Set("Authorization", "Bearer "+s.MasterAuthn.PresharedKey.Key)
+	}
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {

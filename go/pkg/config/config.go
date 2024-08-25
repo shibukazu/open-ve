@@ -7,12 +7,14 @@ type Config struct {
 	GRPC  GRPCConfig  `yaml:"grpc"`
 	Store StoreConfig `yaml:"store"`
 	Log   LogConfig   `yaml:"log"`
+	Authn AuthnConfig `yaml:"authn"`
 }
 
 type SlaveConfig struct {
-	Id             string `yaml:"id"`
-	SlaveHTTPAddr  string `yaml:"slaveHTTPAddr"`
-	MasterHTTPAddr string `yaml:"masterHTTPAddr"`
+	Id             string      `yaml:"id"`
+	SlaveHTTPAddr  string      `yaml:"slaveHTTPAddr"`
+	MasterHTTPAddr string      `yaml:"masterHTTPAddr"`
+	MasterAuthn    AuthnConfig `yaml:"masterAuthn"`
 }
 
 type HttpConfig struct {
@@ -49,6 +51,15 @@ type TLSConfig struct {
 	KeyPath  string `yaml:"keyPath"`
 }
 
+type AuthnConfig struct {
+	Method       string             `yaml:"method"`
+	PresharedKey PresharedKeyConfig `yaml:"presharedKey"`
+}
+
+type PresharedKeyConfig struct {
+	Key string `yaml:"key"`
+}
+
 func DefaultConfig() *Config {
 	return &Config{
 		Mode: "master",
@@ -56,6 +67,12 @@ func DefaultConfig() *Config {
 			Id:             "",
 			SlaveHTTPAddr:  "",
 			MasterHTTPAddr: "",
+			MasterAuthn: AuthnConfig{
+				Method: "none",
+				PresharedKey: PresharedKeyConfig{
+					Key: "",
+				},
+			},
 		},
 		Http: HttpConfig{
 			Port:               "8080",
@@ -82,6 +99,12 @@ func DefaultConfig() *Config {
 		},
 		Log: LogConfig{
 			Level: "info",
+		},
+		Authn: AuthnConfig{
+			Method: "none",
+			PresharedKey: PresharedKeyConfig{
+				Key: "",
+			},
 		},
 	}
 }
