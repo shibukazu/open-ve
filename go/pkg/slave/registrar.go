@@ -89,8 +89,8 @@ func (s *SlaveRegistrar) Register(ctx context.Context) {
 		"validation_ids": validationIds,
 		"authn": map[string]interface{}{
 			"method": s.SlaveAuthn.Method,
-			"preshared_key": map[string]interface{}{
-				"key": s.SlaveAuthn.PresharedKey.Key,
+			"preshared": map[string]interface{}{
+				"key": s.SlaveAuthn.Preshared.Key,
 			},
 		},
 	}
@@ -108,8 +108,8 @@ func (s *SlaveRegistrar) Register(ctx context.Context) {
 	req.Header.Set("Content-Type", "application/json")
 
 	switch s.MasterAuthn.Method {
-	case "preshared_key":
-		req.Header.Set("Authorization", "Bearer "+s.MasterAuthn.PresharedKey.Key)
+	case "preshared":
+		req.Header.Set("Authorization", "Bearer "+s.MasterAuthn.Preshared.Key)
 	}
 
 	resp, err := s.httpClient.Do(req)

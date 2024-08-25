@@ -44,6 +44,10 @@ func ToGRPCError(err error) error {
 		code = codes.NotFound
 	case ErrDSLServiceDSLSyntaxError:
 		code = codes.InvalidArgument
+	case ErrAuthMissingToken:
+		code = codes.Unauthenticated
+	case ErrAuthUnauthorized:
+		code = codes.Unauthenticated
 	case ErrInternalError:
 		code = codes.Internal
 	default:

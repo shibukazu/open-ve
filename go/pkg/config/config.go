@@ -52,11 +52,11 @@ type TLSConfig struct {
 }
 
 type AuthnConfig struct {
-	Method       string             `yaml:"method"`
-	PresharedKey PresharedKeyConfig `yaml:"presharedKey"`
+	Method    string          `yaml:"method"`
+	Preshared PresharedConfig `yaml:"preshared"`
 }
 
-type PresharedKeyConfig struct {
+type PresharedConfig struct {
 	Key string `yaml:"key"`
 }
 
@@ -69,7 +69,7 @@ func DefaultConfig() *Config {
 			MasterHTTPAddr: "",
 			MasterAuthn: AuthnConfig{
 				Method: "none",
-				PresharedKey: PresharedKeyConfig{
+				Preshared: PresharedConfig{
 					Key: "",
 				},
 			},
@@ -102,7 +102,7 @@ func DefaultConfig() *Config {
 		},
 		Authn: AuthnConfig{
 			Method: "none",
-			PresharedKey: PresharedKeyConfig{
+			Preshared: PresharedConfig{
 				Key: "",
 			},
 		},

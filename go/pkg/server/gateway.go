@@ -252,8 +252,8 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 						req.Header.Set("Content-Type", "application/json")
 
 						switch slaveNode.Authn.Method {
-						case "preshared_key":
-							req.Header.Set("Authorization", "Bearer "+slaveNode.Authn.PresharedKey.Key)
+						case "preshared":
+							req.Header.Set("Authorization", "Bearer "+slaveNode.Authn.Preshared.Key)
 						}
 
 						resp, err := client.Do(req)

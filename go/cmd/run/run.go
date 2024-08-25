@@ -72,13 +72,13 @@ func NewRunCommand() *cobra.Command {
 	MustBindPFlag("slave.masterHTTPAddr", flags.Lookup("slave-master-http-addr"))
 	viper.MustBindEnv("slave.masterHTTPAddr", "OPEN-VE_SLAVE_MASTER_HTTP_ADDR")
 
-	flags.String("slave-master-authn-method", defaultConfig.Slave.MasterAuthn.Method, "Authentication method of the master server")
+	flags.String("slave-master-authn-method", defaultConfig.Slave.MasterAuthn.Method, "Authentication method of the master server (preshared)")
 	MustBindPFlag("slave.masterAuthn.method", flags.Lookup("slave-master-authn-method"))
 	viper.MustBindEnv("slave.masterAuthn.method", "OPEN-VE_SLAVE_MASTER_AUTHN_METHOD")
 
-	flags.String("slave-master-authn-preshared-key-key", defaultConfig.Slave.MasterAuthn.PresharedKey.Key, "Preshared key of the master server")
-	MustBindPFlag("slave.masterAuthn.presharedKey.key", flags.Lookup("slave-master-authn-preshared-key-key"))
-	viper.MustBindEnv("slave.masterAuthn.presharedKey.key", "OPEN-VE_SLAVE_MASTER_AUTHN_PRESHARED_KEY_KEY")
+	flags.String("slave-master-authn-preshared-key", defaultConfig.Slave.MasterAuthn.Preshared.Key, "Preshared key of the master server")
+	MustBindPFlag("slave.masterAuthn.preshared.key", flags.Lookup("slave-master-authn-preshared-key"))
+	viper.MustBindEnv("slave.masterAuthn.preshared.key", "OPEN-VE_SLAVE_MASTER_AUTHN_PRESHARED_KEY")
 
 	// HTTP
 	flags.String("http-port", defaultConfig.Http.Port, "HTTP server port")
@@ -147,13 +147,13 @@ func NewRunCommand() *cobra.Command {
 	viper.MustBindEnv("log.level", "OPEN-VE_LOG_LEVEL")
 
 	// Authn
-	flags.String("authn-method", defaultConfig.Authn.Method, "Authentication method")
+	flags.String("authn-method", defaultConfig.Authn.Method, "Authentication method (preshared)")
 	MustBindPFlag("authn.method", flags.Lookup("authn-method"))
 	viper.MustBindEnv("authn.method", "OPEN-VE_AUTHN_METHOD")
 
-	flags.String("authn-preshared-key-key", defaultConfig.Authn.PresharedKey.Key, "Preshared key")
-	MustBindPFlag("authn.presharedKey.key", flags.Lookup("authn-preshared-key-key"))
-	viper.MustBindEnv("authn.presharedKey.key", "OPEN-VE_AUTHN_PRESHARED_KEY_KEY")
+	flags.String("authn-preshared-key", defaultConfig.Authn.Preshared.Key, "Preshared key")
+	MustBindPFlag("authn.preshared.key", flags.Lookup("authn-preshared-key"))
+	viper.MustBindEnv("authn.preshared.key", "OPEN-VE_AUTHN_PRESHARED_KEY")
 
 	return cmd
 }
@@ -221,11 +221,11 @@ func run(cmd *cobra.Command, args []string) {
 	slaveRegistrar := slave.NewSlaveRegistrar(cfg.Slave.Id, cfg.Slave.SlaveHTTPAddr, cfg.GRPC.TLS.Enabled, cfg.Authn, cfg.Slave.MasterHTTPAddr, cfg.Slave.MasterAuthn, dslReader, logger)
 	var authenticator authn.Authenticator
 	switch cfg.Authn.Method {
-	case "presharedKey":
+	case "preshared":
 		logger.Info("🔐 authenticator: preshared key")
-		authenticator = authn.NewPresharedKeyAuthenticator(cfg.Authn.PresharedKey.Key)
+		authenticator = authn.NewPresharedKeyAuthenticator(cfg.Authn.Preshared.Key)
 	default:
-		logger.Warn("⚠️ authenticator: none")
+		logger.Warn("🔓 authenticator: none")
 		authenticator = &authn.NoopAuthenticator{}
 	}
 

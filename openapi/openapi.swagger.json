@@ -134,8 +134,8 @@
         "method": {
           "type": "string"
         },
-        "presharedkey": {
-          "$ref": "#/definitions/Presharedkey"
+        "preshared": {
+          "$ref": "#/definitions/Preshared"
         }
       }
     },
@@ -185,7 +185,7 @@
         "results"
       ]
     },
-    "Presharedkey": {
+    "Preshared": {
       "type": "object",
       "properties": {
         "key": {

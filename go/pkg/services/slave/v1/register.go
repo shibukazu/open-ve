@@ -10,8 +10,8 @@ import (
 func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	authnConfig := config.AuthnConfig{
 		Method: req.Authn.GetMethod(),
-		PresharedKey: config.PresharedKeyConfig{
-			Key: req.Authn.Presharedkey.GetKey(),
+		Preshared: config.PresharedConfig{
+			Key: req.Authn.Preshared.GetKey(),
 		},
 	}
 

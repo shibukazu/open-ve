@@ -17,10 +17,10 @@ message RegisterRequest {
 
 message Authn {
   string method = 1;
-  Presharedkey presharedkey = 2;
+  Preshared preshared = 2;
 }
 
-message Presharedkey {
+message Preshared {
   string key = 1;
 }
 
