@@ -10,10 +10,9 @@ type Config struct {
 }
 
 type SlaveConfig struct {
-	Id                   string `yaml:"id"`
-	SlaveHTTPAddr        string `yaml:"slaveHTTPAddr"`
-	MasterHTTPTLSEnabled bool   `yaml:"masterHTTPTLSEnabled"`
-	MasterHTTPAddr       string `yaml:"masterHTTPAddr"`
+	Id             string `yaml:"id"`
+	SlaveHTTPAddr  string `yaml:"slaveHTTPAddr"`
+	MasterHTTPAddr string `yaml:"masterHTTPAddr"`
 }
 
 type HttpConfig struct {
@@ -54,10 +53,9 @@ func DefaultConfig() *Config {
 	return &Config{
 		Mode: "master",
 		Slave: SlaveConfig{
-			Id:                   "",
-			SlaveHTTPAddr:        "",
-			MasterHTTPAddr:       "",
-			MasterHTTPTLSEnabled: false,
+			Id:             "",
+			SlaveHTTPAddr:  "",
+			MasterHTTPAddr: "",
 		},
 		Http: HttpConfig{
 			Port:               "8080",
