@@ -21,7 +21,7 @@ func GenerateFromOpenAPI2(filePath string) (*dsl.DSL, error) {
 
 	paths := swaggerDoc.Spec().Paths
 	for path, pathItem := range paths.Paths {
-		log.Printf("Parsing Path: %s\n", path)
+		log.Printf("Parsing POST Path: %s\n", path)
 		if pathItem.Post != nil {
 			for _, param := range pathItem.Post.Parameters {
 				if param.Schema != nil {
@@ -97,15 +97,40 @@ func parseParamSchema(doc *spec.Swagger, schema *spec.Schema, parentObjectName s
 		// Primitive
 		if schema.Type != nil {
 			if len(schema.Type) != 1 {
-				return fmt.Errorf("schema.Type is not 1")
+				return fmt.Errorf("size of schema.Type is not 1")
 			}
 			typeName := schema.Type[0]
+			celType := openAPITypeToCELType(typeName, schema.Format)
 			variable := dsl.Variable{
 				Name: parentObjectName + "." + propName,
-				Type: typeName,
+				Type: celType,
 			}
 			*variables = append(*variables, variable)
 		}
 	}
 	return nil
+}
+
+func openAPITypeToCELType(openAPIType string, openAPIFormat string) string {
+	switch openAPIType {
+	case "integer":
+		return "int"
+	case "number":
+		return "double"
+	case "string":
+		if openAPIFormat == "byte" {
+			return "bytes"
+		} else if openAPIFormat == "binary" {
+			return "bytes"
+		}
+		return "string"
+	case "boolean":
+		return "bool"
+	case "array":
+		return "list"
+	case "object":
+		return "map"
+	default:
+		return "string"
+	}
 }
