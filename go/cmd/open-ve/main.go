@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/shibukazu/open-ve/go/cmd/open-ve/gen"
 	"github.com/shibukazu/open-ve/go/cmd/open-ve/run"
+	"github.com/shibukazu/open-ve/go/cmd/open-ve/test"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -19,6 +20,8 @@ func main() {
 	rootCmd.AddCommand(runCmd)
 	genCmd := gen.NewGenCommand()
 	rootCmd.AddCommand(genCmd)
+	testCmd := test.NewTestCommand()
+	rootCmd.AddCommand(testCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)

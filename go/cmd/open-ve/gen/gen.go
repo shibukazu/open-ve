@@ -14,7 +14,7 @@ import (
 
 func NewGenCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "gen [openapi|protobuf] <file>",
+		Use:   "gen [openapi|protobuf] <api schema file> <output dir>",
 		Short: "Generate Open-VE schema file",
 		Long:  "Generate Open-VE schema file",
 		Run:   gen,

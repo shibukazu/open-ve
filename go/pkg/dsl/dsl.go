@@ -1,9 +1,13 @@
 package dsl
 
 import (
+	"io"
+	"os"
+
 	"github.com/google/cel-go/cel"
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
+	"gopkg.in/yaml.v3"
 )
 
 type Variable struct {
@@ -43,12 +47,45 @@ func ToCELVariables(vars []Variable) ([]cel.EnvOption, error) {
 	return celVars, nil
 }
 
+type TestVeriable struct {
+	Name  string      `yaml:"name" json:"name"`
+	Value interface{} `yaml:"value" json:"value"`
+}
+
+type TestCase struct {
+	Name      string         `yaml:"name" json:"name"`
+	Variables []TestVeriable `yaml:"variables" json:"variables"`
+	Expected  bool           `yaml:"expected" json:"expected"`
+}
+
 type Validation struct {
 	ID        string     `yaml:"id" json:"id"`
 	Cels      []string   `yaml:"cels" json:"cels"`
 	Variables []Variable `yaml:"variables" json:"variables"`
+	TestCases []TestCase `yaml:"testCases" json:"testCases"`
 }
 
 type DSL struct {
 	Validations []Validation `yaml:"validations" json:"validations"`
+}
+
+func ParseYAML(yamlFilePath string) (*DSL, error) {
+	yamlFile, err := os.Open(yamlFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer yamlFile.Close()
+
+	yamlBytes, err := io.ReadAll(yamlFile)
+	if err != nil {
+		return nil, err
+	}
+
+	dsl := &DSL{}
+	err = yaml.Unmarshal(yamlBytes, &dsl)
+	if err != nil {
+		return nil, err
+	}
+
+	return dsl, nil
 }
