@@ -2,7 +2,7 @@ package gen
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -44,11 +44,12 @@ func gen(cmd *cobra.Command, args []string) {
 	filePath := args[1]
 	outputDir := args[2]
 
-	log.Printf("Generating open-ve schema for %s file: %s", fileType, filePath)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	logger.Info("🏭 generating open-ve schema", slog.String("fileType", fileType), slog.String("filePath", filePath), slog.String("outputDir", outputDir))
 
 	var serialized []byte
 	if fileType == "openapi" {
-		dsl, err := generator.GenerateFromOpenAPI2(filePath)
+		dsl, err := generator.GenerateFromOpenAPI2(logger, filePath)
 		if err != nil {
 			panic(fmt.Errorf("failed to generate schema: %w", err))
 		}
@@ -69,4 +70,6 @@ func gen(cmd *cobra.Command, args []string) {
 	if err := os.WriteFile(outputPath, serialized, 0644); err != nil {
 		panic(fmt.Errorf("failed to write file: %w", err))
 	}
+
+	logger.Info("🎉 generated open-ve schema", slog.String("outputPath", outputPath))
 }

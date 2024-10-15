@@ -1,27 +1,27 @@
 package generator
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/spec"
+	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/dsl"
 )
 
 // Support Only OpenAPI 2.0
-func GenerateFromOpenAPI2(filePath string) (*dsl.DSL, error) {
+func GenerateFromOpenAPI2(logger *slog.Logger, filePath string) (*dsl.DSL, error) {
 	validations := make([]dsl.Validation, 0)
 
 	swaggerDoc, err := loads.Spec(filePath)
 	if err != nil {
-		return nil, err
+		return nil, failure.Translate(err, failure.Messagef("failed to load OpenAPI schema file: %s", filePath))
 	}
 
 	paths := swaggerDoc.Spec().Paths
 	for path, pathItem := range paths.Paths {
-		log.Printf("Parsing POST Path: %s\n", path)
+		logger.Info("🔍 parsing...", slog.String("path", path))
 		if pathItem.Post != nil {
 			for _, param := range pathItem.Post.Parameters {
 				if param.Schema != nil {
@@ -50,7 +50,7 @@ func resolveSchemaReference(doc *spec.Swagger, schema *spec.Schema) (*spec.Schem
 	if schema.Ref.String() != "" {
 		ref, err := spec.ResolveRef(doc, &schema.Ref)
 		if err != nil {
-			return nil, "", err
+			return nil, "", failure.Translate(err, failure.Messagef("failed to resolve schema reference"))
 		}
 
 		refParts := strings.Split(schema.Ref.String(), "/")
@@ -65,7 +65,7 @@ func resolveSchemaReference(doc *spec.Swagger, schema *spec.Schema) (*spec.Schem
 
 func parseParamSchema(doc *spec.Swagger, schema *spec.Schema, parentObjectName string, propName string, variables *[]dsl.Variable) error {
 	if schema == nil {
-		return fmt.Errorf("schema is nil")
+		return failure.New(failure.Messagef("schema is nil"))
 	}
 
 	if schema.Properties != nil {
@@ -92,12 +92,12 @@ func parseParamSchema(doc *spec.Swagger, schema *spec.Schema, parentObjectName s
 
 	} else if schema.Items != nil {
 		// TODO: Support Array
-		return fmt.Errorf("OpenAPI Array Schema is not supported yet")
+		return failure.New(failure.Messagef("Array is not supported"))
 	} else {
 		// Primitive
 		if schema.Type != nil {
 			if len(schema.Type) != 1 {
-				return fmt.Errorf("size of schema.Type is not 1")
+				return failure.New(failure.Messagef("schema.Type length is not 1"))
 			}
 			typeName := schema.Type[0]
 			celType := openAPITypeToCELType(typeName, schema.Format)
