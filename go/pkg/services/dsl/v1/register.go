@@ -27,18 +27,18 @@ func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 func toDSL(req *pb.RegisterRequest) (*dslPkg.DSL, error) {
 	dsl := &dslPkg.DSL{}
 	if req.Validations == nil {
-		return nil, failure.New(appError.ErrDSLServiceDSLSyntaxError, failure.Messagef("Validations is required"))
+		return nil, failure.New(appError.ErrDSLSyntaxError, failure.Messagef("validations is required"))
 	}
 	dsl.Validations = make([]dslPkg.Validation, len(req.Validations))
 	for i, validation := range req.Validations {
 		if validation.Id == "" {
-			return nil, failure.New(appError.ErrDSLServiceDSLSyntaxError, failure.Messagef("Id is required"))
+			return nil, failure.New(appError.ErrDSLSyntaxError, failure.Messagef("id is required"))
 		}
 		if validation.Cels == nil {
-			return nil, failure.New(appError.ErrDSLServiceDSLSyntaxError, failure.Messagef("Cel is required"))
+			return nil, failure.New(appError.ErrDSLSyntaxError, failure.Messagef("cel is required"))
 		}
 		if validation.Variables == nil {
-			return nil, failure.New(appError.ErrDSLServiceDSLSyntaxError, failure.Messagef("Variables is required"))
+			return nil, failure.New(appError.ErrDSLSyntaxError, failure.Messagef("variables is required"))
 		}
 		dsl.Validations[i] = dslPkg.Validation{
 			ID:        validation.Id,
@@ -47,10 +47,10 @@ func toDSL(req *pb.RegisterRequest) (*dslPkg.DSL, error) {
 		}
 		for j, variable := range validation.Variables {
 			if variable.Name == "" {
-				return nil, failure.New(appError.ErrDSLServiceDSLSyntaxError, failure.Messagef("Variable Name is required"))
+				return nil, failure.New(appError.ErrDSLSyntaxError, failure.Messagef("variable name is required"))
 			}
 			if variable.Type == "" {
-				return nil, failure.New(appError.ErrDSLServiceDSLSyntaxError, failure.Messagef("Variable Type is required"))
+				return nil, failure.New(appError.ErrDSLSyntaxError, failure.Messagef("variable type is required"))
 			}
 			dsl.Validations[i].Variables[j] = dslPkg.Variable{
 				Name: variable.Name,

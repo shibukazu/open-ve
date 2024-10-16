@@ -34,15 +34,15 @@ func NewRunCommand() *cobra.Command {
 			if mode == "slave" {
 				id := viper.GetString("slave.id")
 				if id == "" {
-					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("ID of the slave server is required"))
+					return failure.New(appError.ErrConfigError, failure.Message("ID of the slave server is required"))
 				}
 				slaveHTTPAddr := viper.GetString("slave.slaveHTTPAddr")
 				if slaveHTTPAddr == "" {
-					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("HTTP address of the slave server is required"))
+					return failure.New(appError.ErrConfigError, failure.Message("HTTP address of the slave server is required"))
 				}
 				masterHTTPAddr := viper.GetString("slave.masterHTTPAddr")
 				if masterHTTPAddr == "" {
-					return failure.New(appError.ErrConfigFileSyntaxError, failure.Message("HTTP address of the master server is required"))
+					return failure.New(appError.ErrConfigError, failure.Message("HTTP address of the master server is required"))
 				}
 			}
 			return nil

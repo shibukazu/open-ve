@@ -68,7 +68,7 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
 	listen, err := net.Listen("tcp", ":"+g.gRPCConfig.Port)
 	if err != nil {
-		panic(failure.Translate(err, appError.ErrServerStartFailed))
+		panic(failure.Translate(err, appError.ErrServerError, failure.Message("failed to listen")))
 	}
 
 	grpcServerOpts := []grpc.ServerOption{}
@@ -78,11 +78,11 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 	}...))
 	if g.gRPCConfig.TLS.Enabled {
 		if g.gRPCConfig.TLS.CertPath == "" || g.gRPCConfig.TLS.KeyPath == "" {
-			panic(failure.New(appError.ErrServerStartFailed, failure.Message("certPath and keyPath must be set")))
+			panic(failure.New(appError.ErrServerError, failure.Message("certPath and keyPath must be set")))
 		}
 		creds, err := credentials.NewServerTLSFromFile(g.gRPCConfig.TLS.CertPath, g.gRPCConfig.TLS.KeyPath)
 		if err != nil {
-			panic(failure.Translate(err, appError.ErrServerStartFailed))
+			panic(failure.Translate(err, appError.ErrServerError, failure.Message("failed to load TLS credentials")))
 		}
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
@@ -107,7 +107,7 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
 	go func() {
 		if err := g.server.Serve(listen); err != nil {
-			g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+			g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Message("failed to serve grpc server")).Error())
 		}
 	}()
 

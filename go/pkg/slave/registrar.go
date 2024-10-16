@@ -96,13 +96,13 @@ func (s *SlaveRegistrar) Register(ctx context.Context) {
 	}
 	body, err := json.Marshal(reqBody)
 	if err != nil {
-		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to marshal request body")).Error())
+		s.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Message("failed to marshal slave registration request")).Error())
 		return
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.MasterHTTPAddress+"/v1/slave/register", bytes.NewReader(body))
 	if err != nil {
-		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to create request")).Error())
+		s.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Message("failed to create slave registration request")).Error())
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -114,13 +114,13 @@ func (s *SlaveRegistrar) Register(ctx context.Context) {
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to send request")).Error())
+		s.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Message("failed to send slave registration request")).Error())
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		s.logger.Error(failure.New(appError.ErrSlaveRegistrationFailed, failure.Messagef("Failed to register to master: %d", resp.StatusCode)).Error())
+		s.logger.Error(failure.New(appError.ErrServerError, failure.Messagef("failed to register to master: %d", resp.StatusCode)).Error())
 		return
 	} else {
 		s.logger.Info("📓 slave registration success")

@@ -61,11 +61,11 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	if g.gRPCConfig.TLS.Enabled {
 		if g.gRPCConfig.TLS.CertPath == "" || g.gRPCConfig.TLS.KeyPath == "" {
-			panic(failure.New(appError.ErrServerStartFailed, failure.Message("certPath and keyPath must be set")))
+			panic(failure.New(appError.ErrServerError, failure.Message("certPath and keyPath must be set")))
 		}
 		creds, err := credentials.NewClientTLSFromFile(g.gRPCConfig.TLS.CertPath, "")
 		if err != nil {
-			panic(failure.Translate(err, appError.ErrServerStartFailed))
+			panic(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to load TLS cert")))
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	} else {
@@ -74,7 +74,7 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	conn, err := grpc.NewClient(":"+g.gRPCConfig.Port, dialOpts...)
 	if err != nil {
-		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to dial gRPC server")))
+		panic(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to dial gRPC server")))
 	}
 	defer conn.Close()
 
@@ -85,16 +85,16 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 	grpcGateway := runtime.NewServeMux(muxOpts...)
 
 	if err := pbValidate.RegisterValidateServiceHandlerFromEndpoint(ctx, grpcGateway, ":"+g.gRPCConfig.Port, dialOpts); err != nil {
-		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register validate service on gateway")))
+		panic(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to register validate service on gateway")))
 	}
 
 	if err := pbDSL.RegisterDSLServiceHandlerFromEndpoint(ctx, grpcGateway, ":"+g.gRPCConfig.Port, dialOpts); err != nil {
-		panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register dsl service on gateway")))
+		panic(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to register dsl service on gateway")))
 	}
 
 	if g.mode == "master" {
 		if err := pbSlave.RegisterSlaveServiceHandlerFromEndpoint(ctx, grpcGateway, ":"+g.gRPCConfig.Port, dialOpts); err != nil {
-			panic(failure.Translate(err, appError.ErrServerStartFailed, failure.Messagef("failed to register slave service on gateway")))
+			panic(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to register slave service on gateway")))
 		}
 	}
 
@@ -116,14 +116,14 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		if g.httpConfig.TLS.Enabled {
 			if g.httpConfig.TLS.CertPath == "" || g.httpConfig.TLS.KeyPath == "" {
-				panic(failure.New(appError.ErrServerStartFailed, failure.Messagef("TLS certPath and keyPath must be specified")))
+				panic(failure.New(appError.ErrServerError, failure.Messagef("TLS certPath and keyPath must be specified")))
 			}
 			if err := g.server.ListenAndServeTLS(g.httpConfig.TLS.CertPath, g.httpConfig.TLS.KeyPath); err != nil && err != http.ErrServerClosed {
-				g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+				g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to start gateway server with TLS")).Error())
 			}
 		} else {
 			if err := g.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+				g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to start gateway server")).Error())
 			}
 		}
 	}()
@@ -144,7 +144,7 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 func (g *Gateway) shutdown(ctx context.Context) {
 	if err := g.server.Shutdown(ctx); err != nil {
-		g.logger.Error(failure.Translate(err, appError.ErrServerShutdownFailed).Error())
+		g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to shutdown gateway server")).Error())
 	}
 	g.logger.Info("🛑 gateway server is stopped")
 }
@@ -173,7 +173,7 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 			var reqBody map[string]interface{}
 			var resBody map[string]interface{}
 			if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusBadRequest)
+				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to decode request body")).Error(), http.StatusBadRequest)
 				return
 			}
 
@@ -241,12 +241,12 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 						}
 						body, err := json.Marshal(reqBody)
 						if err != nil {
-							errCh <- failure.Translate(err, appError.ErrValidateServiceForwardFailed)
+							errCh <- failure.Translate(err, appError.ErrRequestForwardFailed, failure.Messagef("failed to marshal request body"))
 							return
 						}
 						req, err := http.NewRequest("POST", slaveNode.Addr+"/v1/check", bytes.NewBuffer(body))
 						if err != nil {
-							errCh <- failure.Translate(err, appError.ErrValidateServiceForwardFailed)
+							errCh <- failure.Translate(err, appError.ErrRequestForwardFailed, failure.Messagef("failed to create forward equest"))
 							return
 						}
 						req.Header.Set("Content-Type", "application/json")
@@ -258,19 +258,19 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 
 						resp, err := client.Do(req)
 						if err != nil {
-							errCh <- failure.Translate(err, appError.ErrValidateServiceForwardFailed)
+							errCh <- failure.Translate(err, appError.ErrRequestForwardFailed, failure.Messagef("failed to forward request to slave id:%s", id))
 							return
 						}
 						defer resp.Body.Close()
 
 						if resp.StatusCode != http.StatusOK {
-							errCh <- failure.New(appError.ErrValidateServiceForwardFailed, failure.Messagef("Failed to forward the validate request to slave: %d", resp.StatusCode))
+							errCh <- failure.New(appError.ErrRequestForwardFailed, failure.Messagef("failed to forward request to slave id:%s", id))
 							return
 						}
 
 						var respBody map[string]interface{}
 						if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
-							errCh <- failure.Translate(err, appError.ErrValidateServiceForwardFailed)
+							errCh <- failure.Translate(err, appError.ErrRequestForwardFailed, failure.Messagef("failed to decode response body"))
 							return
 						}
 						results, ok := respBody["results"].([]interface{})
@@ -294,14 +294,14 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 				case results := <-ch:
 					validationResults = append(validationResults, results...)
 				case <-time.After(30 * time.Second):
-					http.Error(w, failure.New(appError.ErrValidateServiceForwardFailed, failure.Message("Timeout")).Error(), http.StatusInternalServerError)
+					http.Error(w, failure.New(appError.ErrRequestForwardFailed, failure.Message("request forward timeout")).Error(), http.StatusInternalServerError)
 				}
 			}
 
 			reqBody["validations"] = modifiedRequestValidations
 			modifiedReqBody, err := json.Marshal(reqBody)
 			if err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusInternalServerError)
+				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal modified request body")).Error(), http.StatusInternalServerError)
 				return
 			}
 			r.Body = io.NopCloser(bytes.NewBuffer(modifiedReqBody))
@@ -315,7 +315,7 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 
 			// Concat the validation results
 			if err := json.Unmarshal(rec.body.Bytes(), &resBody); err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusInternalServerError)
+				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to decode response body")).Error(), http.StatusInternalServerError)
 				return
 			}
 			originalValidationResults, ok := resBody["results"].([]interface{})
@@ -326,7 +326,7 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 			resBody["results"] = append(originalValidationResults, validationResults...)
 			resBodyJson, err := json.Marshal(resBody)
 			if err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusInternalServerError)
+				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal response body")).Error(), http.StatusInternalServerError)
 				return
 			}
 
@@ -335,7 +335,7 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(resBodyJson)
 			if err != nil {
-				g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+				g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to write response")).Error())
 			}
 		} else {
 			next.ServeHTTP(w, r)
@@ -379,7 +379,7 @@ func (g *Gateway) validateRequestTypeConvertMiddleware(next http.Handler) http.H
 
 				variableNameToCELType, err := g.dslReader.GetVariableNameToCELType(context.Background(), id)
 				if err != nil {
-					http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusBadRequest)
+					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
 
@@ -404,7 +404,7 @@ func (g *Gateway) validateRequestTypeConvertMiddleware(next http.Handler) http.H
 			body["validations"] = validations
 			convertedBody, err := json.Marshal(body)
 			if err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusInternalServerError)
+				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal request body")).Error(), http.StatusBadRequest)
 				return
 			}
 
@@ -430,6 +430,6 @@ func convertCELTypeToGoogleProtobufType(celType string) (string, error) {
 	case "bytes":
 		return "type.googleapis.com/google.protobuf.BytesValue", nil
 	default:
-		return "", failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("Unsupported variable type: %s\nPlease specify one of the following types: int, uint, double, bool, string, bytes", celType))
+		return "", failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("unsupported variable type: %s\nplease specify one of the following types: int, uint, double, bool, string, bytes", celType))
 	}
 }

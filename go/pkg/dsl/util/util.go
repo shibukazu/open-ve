@@ -27,7 +27,7 @@ func DSLVariableToCELVariable(v *dsl.Variable) (cel.EnvOption, error) {
 		return cel.Variable(v.Name, cel.StringType), nil
 	// TODO: listとmap向けの再帰パースの実装
 	default:
-		return nil, failure.New(appError.ErrDSLSyntaxError, failure.Messagef("Unsupported variable type: %s\nPlease specify one of the following types: int, uint, double, bool, string, bytes", v.Type))
+		return nil, failure.New(appError.ErrDSLSyntaxError, failure.Messagef("unsupported variable type: %s\nplease specify one of the following types: int, uint, double, bool, string, bytes", v.Type))
 	}
 }
 

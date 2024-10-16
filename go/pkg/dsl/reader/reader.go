@@ -80,24 +80,24 @@ func (r *DSLReader) parseAndSaveDSL(dsl *dslPkg.DSL) error {
 		}
 		env, err := cel.NewEnv(celVariables...)
 		if err != nil {
-			return failure.Translate(err, appError.ErrCELSyantaxError)
+			return failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to create CEL environment"))
 		}
 
 		allEncodedAST := make([][]byte, 0, len(v.Cels))
 		for _, inputCel := range v.Cels {
 			ast, issues := env.Compile(inputCel)
 			if issues != nil && issues.Err() != nil {
-				return failure.Translate(issues.Err(), appError.ErrCELSyantaxError)
+				return failure.Translate(issues.Err(), appError.ErrDSLSyntaxError, failure.Messagef("failed to compile CEL"))
 			}
 
 			// Convert AST to Proto
 			expr, err := cel.AstToCheckedExpr(ast)
 			if err != nil {
-				return failure.Translate(err, appError.ErrCELSyantaxError)
+				return failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to convert AST to Proto"))
 			}
 			encodedAST, err := proto.Marshal(expr)
 			if err != nil {
-				return failure.Translate(err, appError.ErrCELSyantaxError)
+				return failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to encode AST"))
 			}
 			allEncodedAST = append(allEncodedAST, encodedAST)
 		}

@@ -35,7 +35,7 @@ func (v *Validator) Validate(id string, variables map[string]interface{}) (bool,
 
 	env, err := cel.NewEnv(celVariables...)
 	if err != nil {
-		return false, "", failure.Translate(err, appError.ErrCELSyantaxError)
+		return false, "", failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to create CEL environment: %v", err))
 	}
 
 	allEncodedAST, err := v.store.ReadAllEncodedAST(id)
@@ -51,26 +51,26 @@ func (v *Validator) Validate(id string, variables map[string]interface{}) (bool,
 		go func(encodedAST []byte) {
 			var expr exprpb.CheckedExpr
 			if err = proto.Unmarshal(encodedAST, &expr); err != nil {
-				errorCh <- failure.Translate(err, appError.ErrDSLSyntaxError)
+				errorCh <- failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to unmarshal encoded AST"))
 				return
 			}
 
 			ast := cel.CheckedExprToAst(&expr)
 			prg, err := env.Program(ast)
 			if err != nil {
-				errorCh <- failure.Translate(err, appError.ErrCELSyantaxError)
+				errorCh <- failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to create cel program"))
 				return
 			}
 			res, _, err := prg.Eval(variables)
 			if err != nil {
-				errorCh <- failure.Translate(err, appError.ErrCELSyantaxError)
+				errorCh <- failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to evaluate cel program"))
 				return
 			}
 
 			if !res.Value().(bool) {
 				failedCEL, err := cel.AstToString(ast)
 				if err != nil {
-					errorCh <- failure.Translate(err, appError.ErrCELSyantaxError)
+					errorCh <- failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to convert AST to string"))
 					return
 				}
 				failedCELCh <- failedCEL
