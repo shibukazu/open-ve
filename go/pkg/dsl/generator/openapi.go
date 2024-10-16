@@ -30,7 +30,10 @@ func GenerateFromOpenAPI2(logger *slog.Logger, filePath string) (*dsl.DSL, error
 						return nil, err
 					}
 					variables := make([]dsl.Variable, 0)
-					parseParamSchema(swaggerDoc.Spec(), schema, refName, "", &variables)
+					err = parseParamSchema(swaggerDoc.Spec(), schema, refName, "", &variables)
+					if err != nil {
+						return nil, err
+					}
 					validation := dsl.Validation{
 						ID:        refName,
 						Cels:      []string{},
@@ -77,15 +80,24 @@ func parseParamSchema(doc *spec.Swagger, schema *spec.Schema, parentObjectName s
 					return err
 				}
 				parentObjectName := objectName
-				parseParamSchema(doc, resolvedProp, parentObjectName, "", variables)
+				err = parseParamSchema(doc, resolvedProp, parentObjectName, "", variables)
+				if err != nil {
+					return err
+				}
 			} else {
 				if prop.Properties != nil {
 					// Object
 					parentObjectName := propName
-					parseParamSchema(doc, &prop, parentObjectName, "", variables)
+					err := parseParamSchema(doc, &prop, parentObjectName, "", variables)
+					if err != nil {
+						return err
+					}
 				} else {
 					// Primitive
-					parseParamSchema(doc, &prop, parentObjectName, propName, variables)
+					err := parseParamSchema(doc, &prop, parentObjectName, propName, variables)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
