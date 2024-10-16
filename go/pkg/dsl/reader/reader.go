@@ -8,6 +8,7 @@ import (
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	dslPkg "github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/dsl/util"
 	"github.com/shibukazu/open-ve/go/pkg/store"
 	"google.golang.org/protobuf/proto"
 )
@@ -73,7 +74,7 @@ func (r *DSLReader) parseAndSaveDSL(dsl *dslPkg.DSL) error {
 			return err
 		}
 
-		celVariables, err := dslPkg.ToCELVariables(v.Variables)
+		celVariables, err := util.DSLVariablesToCELVariables(v.Variables)
 		if err != nil {
 			return err
 		}

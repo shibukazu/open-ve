@@ -1,9 +1,11 @@
-package dsl
+package tester
 
 import (
 	"github.com/google/cel-go/cel"
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
+	"github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/dsl/util"
 )
 
 type Result struct {
@@ -11,16 +13,25 @@ type Result struct {
 }
 
 type ValidationResult struct {
-	ID              string
-	FailedTestCases []string
+	ID               string
+	FailedTestCases  []string
+	TestCaseNotFound bool
 }
 
-func (d *DSL) Test() (*Result, error) {
+func TestDSL(d *dsl.DSL) (*Result, error) {
 	result := &Result{}
 	result.ValidationResults = make([]ValidationResult, 0)
 	for _, validation := range d.Validations {
+		if len(validation.TestCases) == 0 {
+			result.ValidationResults = append(result.ValidationResults, ValidationResult{
+				ID:               validation.ID,
+				FailedTestCases:  []string{},
+				TestCaseNotFound: true,
+			})
+			continue
+		}
 		variables := validation.Variables
-		celVariables, err := ToCELVariables(variables)
+		celVariables, err := util.DSLVariablesToCELVariables(variables)
 		if err != nil {
 			return nil, err
 		}
@@ -61,8 +72,9 @@ func (d *DSL) Test() (*Result, error) {
 			}
 		}
 		validationResult := ValidationResult{
-			ID:              validation.ID,
-			FailedTestCases: failedTestCases,
+			ID:               validation.ID,
+			FailedTestCases:  failedTestCases,
+			TestCaseNotFound: false,
 		}
 		result.ValidationResults = append(result.ValidationResults, validationResult)
 	}

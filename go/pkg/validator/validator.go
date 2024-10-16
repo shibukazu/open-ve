@@ -8,7 +8,7 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
-	"github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/dsl/util"
 	"github.com/shibukazu/open-ve/go/pkg/store"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/protobuf/proto"
@@ -28,7 +28,7 @@ func (v *Validator) Validate(id string, variables map[string]interface{}) (bool,
 	if err != nil {
 		return false, "", err
 	}
-	celVariables, err := dsl.ToCELVariables(dslVariables)
+	celVariables, err := util.DSLVariablesToCELVariables(dslVariables)
 	if err != nil {
 		return false, "", err
 	}
