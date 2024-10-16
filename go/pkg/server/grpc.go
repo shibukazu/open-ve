@@ -89,17 +89,17 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
 	g.server = grpc.NewServer(grpcServerOpts...)
 
-	validateService := svcValidate.NewService(ctx, g.validator)
+	validateService := svcValidate.NewService(ctx, g.logger, g.validator)
 	pbValidate.RegisterValidateServiceServer(g.server, validateService)
 
-	dslService := svcDSL.NewService(ctx, mode, g.dslReader, g.slaveRegistrar)
+	dslService := svcDSL.NewService(ctx, g.logger, mode, g.dslReader, g.slaveRegistrar)
 	pbDSL.RegisterDSLServiceServer(g.server, dslService)
 
 	healthService := svcHealth.NewService(ctx)
 	pbHealth.RegisterHealthServer(g.server, healthService)
 
 	if mode == "master" {
-		slaveService := svcSlave.NewService(ctx, g.slaveManager)
+		slaveService := svcSlave.NewService(ctx, g.logger, g.slaveManager)
 		pbSlave.RegisterSlaveServiceServer(g.server, slaveService)
 	}
 
@@ -107,7 +107,7 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
 	go func() {
 		if err := g.server.Serve(listen); err != nil {
-			g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Message("failed to serve grpc server")).Error())
+			panic(failure.Translate(err, appError.ErrServerError, failure.Message("failed to serve grpc server")))
 		}
 	}()
 

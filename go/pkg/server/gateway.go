@@ -119,11 +119,11 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 				panic(failure.New(appError.ErrServerError, failure.Messagef("TLS certPath and keyPath must be specified")))
 			}
 			if err := g.server.ListenAndServeTLS(g.httpConfig.TLS.CertPath, g.httpConfig.TLS.KeyPath); err != nil && err != http.ErrServerClosed {
-				g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to start gateway server with TLS")).Error())
+				panic(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to start gateway server with TLS")))
 			}
 		} else {
 			if err := g.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to start gateway server")).Error())
+				panic(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to start gateway server")))
 			}
 		}
 	}()
@@ -144,7 +144,7 @@ func (g *Gateway) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 func (g *Gateway) shutdown(ctx context.Context) {
 	if err := g.server.Shutdown(ctx); err != nil {
-		g.logger.Error(failure.Translate(err, appError.ErrServerError, failure.Messagef("failed to shutdown gateway server")).Error())
+		panic(failure.Translate(err, appError.ErrServerError, failure.Message("failed to shutdown gateway server")))
 	}
 	g.logger.Info("🛑 gateway server is stopped")
 }
