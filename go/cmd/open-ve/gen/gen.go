@@ -71,5 +71,5 @@ func gen(cmd *cobra.Command, args []string) {
 		panic(fmt.Errorf("failed to write file: %w", err))
 	}
 
-	logger.Info("🎉 generated open-ve schema", slog.String("outputPath", outputPath))
+	logger.Info("✅ generated open-ve schema", slog.String("outputPath", outputPath))
 }
