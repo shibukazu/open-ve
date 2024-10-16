@@ -21,7 +21,7 @@ func GenerateFromOpenAPI2(logger *slog.Logger, filePath string) (*dsl.DSL, error
 
 	paths := swaggerDoc.Spec().Paths
 	for path, pathItem := range paths.Paths {
-		logger.Info("🔍 parsing...", slog.String("path", path))
+		logger.Info("📈 parsing...", slog.String("path", path))
 		if pathItem.Post != nil {
 			for _, param := range pathItem.Post.Parameters {
 				if param.Schema != nil {
