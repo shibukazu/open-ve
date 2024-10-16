@@ -21,7 +21,11 @@ func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 		return nil, appError.ToGRPCError(err)
 	}
 	if s.mode == "slave" {
-		s.slaveRegistrar.Register(ctx)
+		err := s.slaveRegistrar.Register(ctx)
+		if err != nil {
+			logger.LogError(s.logger, err)
+			return nil, appError.ToGRPCError(err)
+		}
 	}
 
 	return &pb.RegisterResponse{}, nil

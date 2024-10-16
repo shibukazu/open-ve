@@ -58,7 +58,6 @@ func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, slaveA
 
 func (s *SlaveRegistrar) RegisterTimer(ctx context.Context, wg *sync.WaitGroup) {
 	s.logger.Info("🟢 slave registration timer started")
-	s.Register(ctx)
 	err := s.Register(ctx)
 	if err != nil {
 		logger.LogError(s.logger, err)
