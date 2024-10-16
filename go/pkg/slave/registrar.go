@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
+	"github.com/shibukazu/open-ve/go/pkg/logger"
 )
 
 type SlaveRegistrar struct {
@@ -61,7 +61,7 @@ func (s *SlaveRegistrar) RegisterTimer(ctx context.Context, wg *sync.WaitGroup) 
 	s.Register(ctx)
 	err := s.Register(ctx)
 	if err != nil {
-		s.logger.Error("failed to register slave to master: %+v", slog.Any("code", failure.CodeOf(err)), slog.String("message", failure.MessageOf(err).String()), slog.String("details", fmt.Sprintf("%+v", err)))
+		logger.LogError(s.logger, err)
 	}
 	ticker := time.NewTicker(30 * time.Second)
 	for {
@@ -74,7 +74,7 @@ func (s *SlaveRegistrar) RegisterTimer(ctx context.Context, wg *sync.WaitGroup) 
 		case <-ticker.C:
 			err := s.Register(ctx)
 			if err != nil {
-				s.logger.Error("failed to register slave to master", slog.Any("code", failure.CodeOf(err)), slog.String("message", failure.MessageOf(err).String()), slog.String("details", fmt.Sprintf("%+v", err)))
+				logger.LogError(s.logger, err)
 			}
 		}
 	}

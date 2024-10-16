@@ -5,6 +5,7 @@ import (
 
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
+	"github.com/shibukazu/open-ve/go/pkg/logger"
 	pb "github.com/shibukazu/open-ve/go/proto/validate/v1"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -16,10 +17,12 @@ func (s *Service) Check(ctx context.Context, req *pb.CheckRequest) (*pb.CheckRes
 	for _, validation := range req.Validations {
 		variables, err := convertAnyMapToInterfaceMap(validation.Variables)
 		if err != nil {
+			logger.LogError(s.logger, err)
 			return nil, appError.ToGRPCError(err)
 		}
 		is_valid, msg, err := s.validator.Validate(validation.Id, variables)
 		if err != nil {
+			logger.LogError(s.logger, err)
 			return nil, appError.ToGRPCError(err)
 		}
 		results = append(results, &pb.ValidationResult{Id: validation.Id, IsValid: is_valid, Message: msg})

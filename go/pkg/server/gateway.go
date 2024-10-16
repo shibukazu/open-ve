@@ -18,6 +18,7 @@ import (
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
+	"github.com/shibukazu/open-ve/go/pkg/logger"
 	"github.com/shibukazu/open-ve/go/pkg/slave"
 	pbDSL "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 	pbSlave "github.com/shibukazu/open-ve/go/proto/slave/v1"
@@ -173,13 +174,17 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 			var reqBody map[string]interface{}
 			var resBody map[string]interface{}
 			if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to decode request body")).Error(), http.StatusBadRequest)
+				err = failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to decode request body"))
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				logger.LogError(g.logger, err)
 				return
 			}
 
 			validations, ok := reqBody["validations"].([]interface{})
 			if !ok {
-				http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validations field is invalid")).Error(), http.StatusBadRequest)
+				err := failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validations field is invalid"))
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				logger.LogError(g.logger, err)
 				return
 			}
 
@@ -195,12 +200,16 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 			for _, validation := range validations {
 				validation, ok := validation.(map[string]interface{})
 				if !ok {
-					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validation field is invalid")).Error(), http.StatusBadRequest)
+					err := failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validation field is invalid"))
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					logger.LogError(g.logger, err)
 					return
 				}
 				id, ok := validation["id"].(string)
 				if !ok {
-					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("id field is invalid")).Error(), http.StatusBadRequest)
+					err := failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("id field is invalid"))
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					logger.LogError(g.logger, err)
 					return
 				}
 
@@ -290,18 +299,23 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 				select {
 				case err := <-errCh:
 					http.Error(w, err.Error(), http.StatusInternalServerError)
+					logger.LogError(g.logger, err)
 					return
 				case results := <-ch:
 					validationResults = append(validationResults, results...)
 				case <-time.After(30 * time.Second):
-					http.Error(w, failure.New(appError.ErrRequestForwardFailed, failure.Message("request forward timeout")).Error(), http.StatusInternalServerError)
+					err := failure.New(appError.ErrRequestForwardFailed, failure.Message("request forward timeout"))
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					logger.LogError(g.logger, err)
 				}
 			}
 
 			reqBody["validations"] = modifiedRequestValidations
 			modifiedReqBody, err := json.Marshal(reqBody)
 			if err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal modified request body")).Error(), http.StatusInternalServerError)
+				err = failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal modified request body"))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.LogError(g.logger, err)
 				return
 			}
 			r.Body = io.NopCloser(bytes.NewBuffer(modifiedReqBody))
@@ -315,18 +329,24 @@ func (g *Gateway) forwardCheckRequestMiddleware(next http.Handler) http.Handler 
 
 			// Concat the validation results
 			if err := json.Unmarshal(rec.body.Bytes(), &resBody); err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to decode response body")).Error(), http.StatusInternalServerError)
+				err = failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to decode response body"))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.LogError(g.logger, err)
 				return
 			}
 			originalValidationResults, ok := resBody["results"].([]interface{})
 			if !ok {
-				http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("results field is invalid")).Error(), http.StatusInternalServerError)
+				err := failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("results field is invalid"))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.LogError(g.logger, err)
 				return
 			}
 			resBody["results"] = append(originalValidationResults, validationResults...)
 			resBodyJson, err := json.Marshal(resBody)
 			if err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal response body")).Error(), http.StatusInternalServerError)
+				err = failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal response body"))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.LogError(g.logger, err)
 				return
 			}
 
@@ -348,38 +368,49 @@ func (g *Gateway) validateRequestTypeConvertMiddleware(next http.Handler) http.H
 		if r.URL.Path == "/v1/check" && r.Method == "POST" {
 			var body map[string]interface{}
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid).Error(), http.StatusBadRequest)
+				err = failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to decode request body"))
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				logger.LogError(g.logger, err)
 				return
 			}
 
 			validations, ok := body["validations"].([]interface{})
 			if !ok {
-				http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validations field is invalid")).Error(), http.StatusBadRequest)
+				err := failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validations field is invalid"))
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				logger.LogError(g.logger, err)
 				return
 			}
 
 			for idx, validation := range validations {
 				validation, ok := validation.(map[string]interface{})
 				if !ok {
-					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validation field is invalid")).Error(), http.StatusBadRequest)
+					err := failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("validation field is invalid"))
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					logger.LogError(g.logger, err)
 					return
 				}
 
 				id, ok := validation["id"].(string)
 				if !ok {
-					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("id field is invalid")).Error(), http.StatusBadRequest)
+					err := failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("id field is invalid"))
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					logger.LogError(g.logger, err)
 					return
 				}
 
 				variables, ok := validation["variables"].(map[string]interface{})
 				if !ok {
-					http.Error(w, failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("variables field is invalid")).Error(), http.StatusBadRequest)
+					err := failure.New(appError.ErrRequestParameterInvalid, failure.Messagef("variables field is invalid"))
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					logger.LogError(g.logger, err)
 					return
 				}
 
 				variableNameToCELType, err := g.dslReader.GetVariableNameToCELType(context.Background(), id)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					logger.LogError(g.logger, err)
 					return
 				}
 
@@ -389,6 +420,7 @@ func (g *Gateway) validateRequestTypeConvertMiddleware(next http.Handler) http.H
 					convertedType, err := convertCELTypeToGoogleProtobufType(celType)
 					if err != nil {
 						http.Error(w, err.Error(), http.StatusBadRequest)
+						logger.LogError(g.logger, err)
 						return
 					}
 					variable := make(map[string]interface{}, 2)
@@ -404,7 +436,9 @@ func (g *Gateway) validateRequestTypeConvertMiddleware(next http.Handler) http.H
 			body["validations"] = validations
 			convertedBody, err := json.Marshal(body)
 			if err != nil {
-				http.Error(w, failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal request body")).Error(), http.StatusBadRequest)
+				err = failure.Translate(err, appError.ErrRequestParameterInvalid, failure.Messagef("failed to marshal request body"))
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				logger.LogError(g.logger, err)
 				return
 			}
 

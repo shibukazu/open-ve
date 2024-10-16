@@ -2,19 +2,17 @@ package dslv1
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 
-	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	dslPkg "github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/logger"
 	pb "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 )
 
 func (s *Service) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	dsl, err := s.dslReader.Read(ctx)
 	if err != nil {
-		s.logger.Error("failed to read dsl: %v", slog.Any("code", failure.CodeOf(err)), slog.String("message", failure.MessageOf(err).String()), slog.String("details", fmt.Sprintf("%+v", err)))
+		logger.LogError(s.logger, err)
 		return nil, appError.ToGRPCError(err)
 	}
 	return toProto(dsl), nil

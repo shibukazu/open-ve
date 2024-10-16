@@ -2,23 +2,22 @@ package dslv1
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 
 	"github.com/morikuni/failure/v2"
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	dslPkg "github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/logger"
 	pb "github.com/shibukazu/open-ve/go/proto/dsl/v1"
 )
 
 func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	dsl, err := toDSL(req)
 	if err != nil {
-		s.logger.Error("failed to parse dsl: %v", slog.Any("code", failure.CodeOf(err)), slog.String("message", failure.MessageOf(err).String()), slog.String("details", fmt.Sprintf("%+v", err)))
+		logger.LogError(s.logger, err)
 		return nil, appError.ToGRPCError(err)
 	}
 	if err := s.dslReader.Register(ctx, dsl); err != nil {
-		s.logger.Error("failed to register dsl: %v", slog.Any("code", failure.CodeOf(err)), slog.String("message", failure.MessageOf(err).String()), slog.String("details", fmt.Sprintf("%+v", err)))
+		logger.LogError(s.logger, err)
 		return nil, appError.ToGRPCError(err)
 	}
 	if s.mode == "slave" {
