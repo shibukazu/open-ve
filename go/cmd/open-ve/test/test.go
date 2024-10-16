@@ -5,7 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/shibukazu/open-ve/go/pkg/dsl"
+	"github.com/shibukazu/open-ve/go/pkg/dsl/tester"
+	"github.com/shibukazu/open-ve/go/pkg/dsl/util"
 	"github.com/spf13/cobra"
 )
 
@@ -35,22 +36,34 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 func test(cmd *cobra.Command, args []string) {
 	filePath := args[0]
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	logger.Info("🧪 test open-ve schema", slog.String("filePath", filePath))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	logger.Info("🧪 testing open-ve schema", slog.String("filePath", filePath))
 
-	dsl, err := dsl.ParseYAML(filePath)
+	dsl, err := util.ParseDSLYAML(filePath)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse schema: %w", err))
 	}
-	result, err := dsl.Test()
+	result, err := tester.TestDSL(dsl)
 	if err != nil {
 		panic(fmt.Errorf("failed to test schema: %w", err))
 	}
+	numPassed := 0
+	numFailed := 0
+	numNotFound := 0
 	for _, validationResult := range result.ValidationResults {
-		if len(validationResult.FailedTestCases) > 0 {
-			logger.Info("❌ test failed", slog.String("id", validationResult.ID), slog.String("failedTestCases", fmt.Sprintf("%v", validationResult.FailedTestCases)))
+		if validationResult.TestCaseNotFound {
+			numNotFound++
+			logger.Info(fmt.Sprintf("✅ NoutFound: %s", validationResult.ID))
+		} else if len(validationResult.FailedTestCases) > 0 {
+			numFailed++
+			logger.Info(fmt.Sprintf("❌ FAILED   : %s", validationResult.ID))
+			for _, failedTestCase := range validationResult.FailedTestCases {
+				logger.Info(fmt.Sprintf("  - %s", failedTestCase))
+			}
 		} else {
-			logger.Info("✅ test passed", slog.String("id", validationResult.ID))
+			numPassed++
+			logger.Info(fmt.Sprintf("✅ PASS     : %s", validationResult.ID))
 		}
 	}
+	logger.Info(fmt.Sprintf("📊 Results: %d passed, %d failed, %d not found", numPassed, numFailed, numNotFound))
 }

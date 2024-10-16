@@ -38,7 +38,7 @@ func (s *MemoryStore) WriteSchema(dsl *dsl.DSL) error {
 	enc := json.NewEncoder(&dslJson)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(dsl); err != nil {
-		return failure.Translate(err, appError.ErrDSLSyntaxError)
+		return failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to encode dsl to json"))
 	}
 	s.mu.Lock()
 	s.memory[s.id+":schema"] = dslJson.Bytes()
@@ -53,11 +53,11 @@ func (s *MemoryStore) ReadSchema() (*dsl.DSL, error) {
 	dslJSON, ok := s.memory[s.id+":schema"]
 	s.mu.RUnlock()
 	if !ok {
-		return nil, failure.New(appError.ErrRedisOperationFailed)
+		return nil, failure.New(appError.ErrStoreOperationFailed, failure.Messagef("schema not found"))
 	}
 
 	if err := json.Unmarshal(dslJSON, dsl); err != nil {
-		return nil, failure.Translate(err, appError.ErrDSLSyntaxError)
+		return nil, failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to decode dsl from json"))
 	}
 	return dsl, nil
 }
@@ -65,7 +65,7 @@ func (s *MemoryStore) ReadSchema() (*dsl.DSL, error) {
 func (s *MemoryStore) WriteVariables(id string, variables []dsl.Variable) error {
 	variablesJson, err := json.Marshal(variables)
 	if err != nil {
-		return failure.Translate(err, appError.ErrDSLSyntaxError)
+		return failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to encode variables to json"))
 	}
 	s.mu.Lock()
 	s.memory[getVariablesID(s.id, id)] = variablesJson
@@ -78,12 +78,12 @@ func (s *MemoryStore) ReadVariables(id string) ([]dsl.Variable, error) {
 	variablesJSON, ok := s.memory[getVariablesID(s.id, id)]
 	s.mu.RUnlock()
 	if !ok {
-		return nil, failure.New(appError.ErrRedisOperationFailed)
+		return nil, failure.New(appError.ErrStoreOperationFailed, failure.Messagef("variables not found"))
 	}
 
 	var variables []dsl.Variable
 	if err := json.Unmarshal(variablesJSON, &variables); err != nil {
-		return nil, failure.Translate(err, appError.ErrDSLSyntaxError)
+		return nil, failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("failed to decode variables from json"))
 	}
 	return variables, nil
 }
@@ -107,7 +107,7 @@ func (s *MemoryStore) ReadAllEncodedAST(id string) ([][]byte, error) {
 	jsonEncodedAllEncodedAST, ok := s.memory[getAstID(s.id, id)]
 	s.mu.RUnlock()
 	if !ok {
-		return nil, failure.New(appError.ErrRedisOperationFailed)
+		return nil, failure.New(appError.ErrStoreOperationFailed)
 	}
 	return jsonDecodeAllEncodedAST(jsonEncodedAllEncodedAST)
 }

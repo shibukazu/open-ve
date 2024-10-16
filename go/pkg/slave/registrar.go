@@ -15,6 +15,7 @@ import (
 	"github.com/shibukazu/open-ve/go/pkg/appError"
 	"github.com/shibukazu/open-ve/go/pkg/config"
 	"github.com/shibukazu/open-ve/go/pkg/dsl/reader"
+	"github.com/shibukazu/open-ve/go/pkg/logger"
 )
 
 type SlaveRegistrar struct {
@@ -57,7 +58,10 @@ func NewSlaveRegistrar(id, slaveHTTPAddress string, slaveTLSEnabled bool, slaveA
 
 func (s *SlaveRegistrar) RegisterTimer(ctx context.Context, wg *sync.WaitGroup) {
 	s.logger.Info("🟢 slave registration timer started")
-	s.Register(ctx)
+	err := s.Register(ctx)
+	if err != nil {
+		logger.LogError(s.logger, err)
+	}
 	ticker := time.NewTicker(30 * time.Second)
 	for {
 		select {
@@ -67,16 +71,18 @@ func (s *SlaveRegistrar) RegisterTimer(ctx context.Context, wg *sync.WaitGroup) 
 			wg.Done()
 			return
 		case <-ticker.C:
-			s.Register(ctx)
+			err := s.Register(ctx)
+			if err != nil {
+				logger.LogError(s.logger, err)
+			}
 		}
 	}
 }
 
-func (s *SlaveRegistrar) Register(ctx context.Context) {
+func (s *SlaveRegistrar) Register(ctx context.Context) error {
 	dsl, err := s.dslReader.Read(ctx)
 	if err != nil {
-		s.logger.Error(err.Error())
-		return
+		return err
 	}
 	validationIds := make([]string, len(dsl.Validations))
 	for i, validation := range dsl.Validations {
@@ -96,14 +102,12 @@ func (s *SlaveRegistrar) Register(ctx context.Context) {
 	}
 	body, err := json.Marshal(reqBody)
 	if err != nil {
-		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to marshal request body")).Error())
-		return
+		return failure.Translate(err, appError.ErrServerError, failure.Message("failed to marshal slave registration request"))
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.MasterHTTPAddress+"/v1/slave/register", bytes.NewReader(body))
 	if err != nil {
-		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to create request")).Error())
-		return
+		return failure.Translate(err, appError.ErrServerError, failure.Message("failed to create slave registration request"))
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -114,15 +118,15 @@ func (s *SlaveRegistrar) Register(ctx context.Context) {
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		s.logger.Error(failure.Translate(err, appError.ErrSlaveRegistrationFailed, failure.Message("Failed to send request")).Error())
-		return
+		return failure.Translate(err, appError.ErrServerError, failure.Message("failed to send slave registration request"))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		s.logger.Error(failure.New(appError.ErrSlaveRegistrationFailed, failure.Messagef("Failed to register to master: %d", resp.StatusCode)).Error())
-		return
+		return failure.New(appError.ErrServerError, failure.Messagef("failed to register to master: %d", resp.StatusCode))
 	} else {
 		s.logger.Info("📓 slave registration success")
 	}
+
+	return nil
 }

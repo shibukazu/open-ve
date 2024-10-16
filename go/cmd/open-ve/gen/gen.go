@@ -44,7 +44,7 @@ func gen(cmd *cobra.Command, args []string) {
 	filePath := args[1]
 	outputDir := args[2]
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	logger.Info("🏭 generating open-ve schema", slog.String("fileType", fileType), slog.String("filePath", filePath), slog.String("outputDir", outputDir))
 
 	var serialized []byte
@@ -71,5 +71,5 @@ func gen(cmd *cobra.Command, args []string) {
 		panic(fmt.Errorf("failed to write file: %w", err))
 	}
 
-	logger.Info("🎉 generated open-ve schema", slog.String("outputPath", outputPath))
+	logger.Info("✅ generated open-ve schema", slog.String("outputPath", outputPath))
 }

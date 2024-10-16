@@ -20,7 +20,7 @@ func jsonEncodeAllEncodedAST(allEncodedAST [][]byte) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	if err := enc.Encode(allEncodedAST); err != nil {
-		return nil, failure.Translate(err, appError.ErrInternalError)
+		return nil, failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("Failed to encode AST: %v", err))
 	}
 	return buf.Bytes(), nil
 }
@@ -28,7 +28,7 @@ func jsonEncodeAllEncodedAST(allEncodedAST [][]byte) ([]byte, error) {
 func jsonDecodeAllEncodedAST(jsonEncodedAllEncodedAST []byte) ([][]byte, error) {
 	var allEncodedAST [][]byte
 	if err := json.Unmarshal(jsonEncodedAllEncodedAST, &allEncodedAST); err != nil {
-		return nil, failure.Translate(err, appError.ErrInternalError)
+		return nil, failure.Translate(err, appError.ErrDSLSyntaxError, failure.Messagef("Failed to decode encoded AST: %v", err))
 	}
 	return allEncodedAST, nil
 }

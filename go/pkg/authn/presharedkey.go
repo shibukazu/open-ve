@@ -19,11 +19,11 @@ func NewPresharedKeyAuthenticator(key string) *PresharedKeyAuthenticator {
 func (a *PresharedKeyAuthenticator) Authenticate(ctx context.Context) (string, error) {
 	authHeader, err := grpcauth.AuthFromMD(ctx, "Bearer")
 	if err != nil {
-		return "", failure.Translate(err, appError.ErrAuthMissingToken)
+		return "", failure.Translate(err, appError.ErrAuthenticationFailed, failure.Messagef("failed to get auth header"))
 	}
 
 	if authHeader != a.key {
-		return "", failure.New(appError.ErrAuthUnauthorized)
+		return "", failure.New(appError.ErrAuthenticationFailed, failure.Messagef("invalid key"))
 	}
 
 	return "", nil

@@ -68,7 +68,7 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
 	listen, err := net.Listen("tcp", ":"+g.gRPCConfig.Port)
 	if err != nil {
-		panic(failure.Translate(err, appError.ErrServerStartFailed))
+		panic(failure.Translate(err, appError.ErrServerError, failure.Message("failed to listen")))
 	}
 
 	grpcServerOpts := []grpc.ServerOption{}
@@ -78,28 +78,28 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 	}...))
 	if g.gRPCConfig.TLS.Enabled {
 		if g.gRPCConfig.TLS.CertPath == "" || g.gRPCConfig.TLS.KeyPath == "" {
-			panic(failure.New(appError.ErrServerStartFailed, failure.Message("certPath and keyPath must be set")))
+			panic(failure.New(appError.ErrServerError, failure.Message("certPath and keyPath must be set")))
 		}
 		creds, err := credentials.NewServerTLSFromFile(g.gRPCConfig.TLS.CertPath, g.gRPCConfig.TLS.KeyPath)
 		if err != nil {
-			panic(failure.Translate(err, appError.ErrServerStartFailed))
+			panic(failure.Translate(err, appError.ErrServerError, failure.Message("failed to load TLS credentials")))
 		}
 		grpcServerOpts = append(grpcServerOpts, grpc.Creds(creds))
 	}
 
 	g.server = grpc.NewServer(grpcServerOpts...)
 
-	validateService := svcValidate.NewService(ctx, g.validator)
+	validateService := svcValidate.NewService(ctx, g.logger, g.validator)
 	pbValidate.RegisterValidateServiceServer(g.server, validateService)
 
-	dslService := svcDSL.NewService(ctx, mode, g.dslReader, g.slaveRegistrar)
+	dslService := svcDSL.NewService(ctx, g.logger, mode, g.dslReader, g.slaveRegistrar)
 	pbDSL.RegisterDSLServiceServer(g.server, dslService)
 
 	healthService := svcHealth.NewService(ctx)
 	pbHealth.RegisterHealthServer(g.server, healthService)
 
 	if mode == "master" {
-		slaveService := svcSlave.NewService(ctx, g.slaveManager)
+		slaveService := svcSlave.NewService(ctx, g.logger, g.slaveManager)
 		pbSlave.RegisterSlaveServiceServer(g.server, slaveService)
 	}
 
@@ -107,7 +107,7 @@ func (g *GRPC) Run(ctx context.Context, wg *sync.WaitGroup, mode string) {
 
 	go func() {
 		if err := g.server.Serve(listen); err != nil {
-			g.logger.Error(failure.Translate(err, appError.ErrServerInternalError).Error())
+			panic(failure.Translate(err, appError.ErrServerError, failure.Message("failed to serve grpc server")))
 		}
 	}()
 
