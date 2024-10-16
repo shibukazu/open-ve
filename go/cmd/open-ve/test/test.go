@@ -36,7 +36,7 @@ func test(cmd *cobra.Command, args []string) {
 	filePath := args[0]
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	logger.Info("🏭 test open-ve schema", slog.String("filePath", filePath))
+	logger.Info("🧪 test open-ve schema", slog.String("filePath", filePath))
 
 	dsl, err := dsl.ParseYAML(filePath)
 	if err != nil {
@@ -48,9 +48,9 @@ func test(cmd *cobra.Command, args []string) {
 	}
 	for _, validationResult := range result.ValidationResults {
 		if len(validationResult.FailedTestCases) > 0 {
-			logger.Info("❌ validation failed", slog.String("id", validationResult.ID), slog.String("failedTestCases", fmt.Sprintf("%v", validationResult.FailedTestCases)))
+			logger.Info("❌ test failed", slog.String("id", validationResult.ID), slog.String("failedTestCases", fmt.Sprintf("%v", validationResult.FailedTestCases)))
 		} else {
-			logger.Info("✅ validation passed", slog.String("id", validationResult.ID))
+			logger.Info("✅ test passed", slog.String("id", validationResult.ID))
 		}
 	}
 }
