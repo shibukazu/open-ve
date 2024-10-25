@@ -4,6 +4,18 @@ This example demonstrates how to run the Open-VE as master-slave architecture.
 
 Note: In this example, the master node is hosted at `localhost:8081`, and the slave node is hosted at `localhost:8082`.
 
+## Master-Slave System Design
+
+Open-VE supports a master-slave architecture designed for scalability and compatibility with microservice environments.
+
+In slave mode, Open-VE connects to the master server and syncs validation rules every 30 seconds.
+
+When a validation check request is made to the master server, it redirects the request across the connected slave servers.
+
+Additionally, you can directly request validation checks to the slave servers.
+
+![micro-validator](https://github.com/user-attachments/assets/e248d40c-bcc7-4219-a65a-5b243e101000)
+
 ## Run
 
 ### Master Node

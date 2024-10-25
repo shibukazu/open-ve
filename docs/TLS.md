@@ -1,8 +1,9 @@
-# Try TLS Connection (on Master-Slave Architecture)
+# TLS
 
-This document describes how to debug TLS connection in Open-VE.
+This document describes how to set up TLS connection in Open-VE.
 
-Note: This document uses docker-compose to run Open-VE. So you can connct slave node by using `localhost:8082` from outside of the container, and `slave-node:8082` from inside of the container.
+> [!NOTE]
+> This document uses docker-compose to run Open-VE. So you can connct slave node by using `localhost:8082` from outside of the container, and `slave-node:8082` from inside of the container.
 
 ## Generate Certificates
 
