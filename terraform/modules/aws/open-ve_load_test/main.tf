@@ -61,9 +61,23 @@ resource "aws_ecs_task_definition" "task" {
           protocol      = "tcp"
         },
         {
-            containerPort = 9000
-            hostPort      = 9000
-            protocol      = "tcp"
+          containerPort = 9000
+          hostPort      = 9000
+          protocol      = "tcp"
+        }
+      ]
+      environment = [
+        {
+          name  = "OPEN-VE_MODE"
+          value = "master"
+        },
+        {
+          name = "OPEN-VE_AUTHN_METHOD"
+          value = "preshared"
+        },
+        {
+          name = "OPEN-VE_AUTHN_PRESHARED_KEY"
+          value = var.preshared_key
         }
       ]
     }
