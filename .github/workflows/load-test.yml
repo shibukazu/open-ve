@@ -1,7 +1,9 @@
 name: Load Test
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   deploy:
