@@ -1,0 +1,79 @@
+name: Load Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      # コードのチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # AWS認証情報の設定
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ap-northeast-1
+
+      # Terraformのセットアップ
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      # Terraformの初期化
+      - name: Terraform Init
+        run: terraform init
+
+      # Terraformでインフラを作成
+      - name: Terraform Apply
+        id: terraform
+        run: |
+          terraform apply -target=module.load_test -auto-approve -var="preshared_key=${{ secrets.PRESHARED_KEY }}"
+          echo "ECR_URL=$(terraform output -raw ecr_repository_url)" >> $GITHUB_ENV
+          echo "SUBNET_ID=$(terraform output -raw public_subnets | jq -r '.[0]')" >> $GITHUB_ENV
+          echo "VPC_ID=$(terraform output -raw vpc_id)" >> $GITHUB_ENV
+
+      # DockerイメージをビルドしてECRにプッシュ
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t $ECR_URL:latest .
+          echo "Logging into ECR"
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+          docker push $ECR_URL:latest
+
+      # ECSタスクを実行
+      - name: Run Fargate Task
+        run: |
+          TASK_ARN=$(aws ecs run-task \
+            --cluster ${local.prefix}-ecs_cluster \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[${local.prefix}-service-security-group],assignPublicIp=ENABLED}" \
+            --task-definition ${local.prefix}-ecs_task \
+            --query "tasks[0].taskArn" \
+            --output text)
+          echo "Task ARN: $TASK_ARN"
+          echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
+
+      # Locustで負荷テストを実行
+      - name: Run Locust Load Test
+        run: |
+          locust -f locust/monolithic.py --host=http://$SUBNET_ID --headless -u 1000 -r 10 -t 100
+
+      # Fargateタスクの停止
+      - name: Stop Fargate Task
+        if: always()
+        run: |
+          aws ecs stop-task --cluster ${local.prefix}-ecs_cluster --task $TASK_ARN
+
+      # Terraformでリソースを削除
+      - name: Terraform Destroy
+        if: always()
+        run: terraform destroy -target=module.load_test -auto-approve

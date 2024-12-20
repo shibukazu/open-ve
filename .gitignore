@@ -8,3 +8,5 @@ terraform.tfstate
 terraform.tfstate.backup
 # python
 __pycache__/
+# actions
+.act/

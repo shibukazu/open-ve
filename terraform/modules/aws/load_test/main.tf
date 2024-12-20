@@ -164,3 +164,15 @@ resource "aws_security_group" "service_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+output "ecr_repository_url" {
+  value = aws_ecr_repository.repo.repository_url
+}
+
+output "public_subnets" {
+  value = aws_subnet.public_subnet[*].id
+}
+
+output "vpc_id" {
+  value = aws_vpc.vpc.id
+}

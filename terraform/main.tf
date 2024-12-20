@@ -1,5 +1,9 @@
 
-module open-ve_load_test {
-  source = "./modules/aws/open-ve_load_test"
+module load_test {
+  source = "./modules/aws/load_test"
   preshared_key = var.preshared_key
+}
+
+module oidc {
+  source = "./modules/aws/oidc"
 }
