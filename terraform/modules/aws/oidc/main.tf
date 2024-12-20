@@ -15,33 +15,33 @@ resource "aws_iam_openid_connect_provider" "github" {
   ]
 }
 
-data "aws_iam_policy_document" "github_oidc_trust" {
-  statement {
-    effect = "Allow"
 
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github.arn]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:sub"
-      values = [
-        "repo:shibukazu/open-ve:ref:refs/heads/main"
-      ]
-    }
-  }
-}
 
 resource "aws_iam_role" "github_oidc_role" {
-  name               = "${local.prefix}-role"
-  assume_role_policy = data.aws_iam_policy_document.github_oidc_trust.json
+  name = "${local.prefix}-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity",
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.github.arn
+        },
+        Condition = {
+          StringLike = {
+            "token.actions.githubusercontent.com:sub" : [
+              "repo:shibukazu/open-ve:*",
+            ]
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role_policy" "github_oidc_policy" {
+  name   = "${local.prefix}-policy"
   role   = aws_iam_role.github_oidc_role.id
   policy = data.aws_iam_policy_document.github_oidc_access_policy.json
 }

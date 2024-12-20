@@ -72,11 +72,11 @@ resource "aws_ecs_task_definition" "task" {
           value = "master"
         },
         {
-          name = "OPEN-VE_AUTHN_METHOD"
+          name  = "OPEN-VE_AUTHN_METHOD"
           value = "preshared"
         },
         {
-          name = "OPEN-VE_AUTHN_PRESHARED_KEY"
+          name  = "OPEN-VE_AUTHN_PRESHARED_KEY"
           value = var.preshared_key
         }
       ]
@@ -133,8 +133,8 @@ resource "aws_ecs_service" "service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = [aws_subnet.public_subnet[0].id]
-    security_groups = [aws_security_group.service_sg.id]
+    subnets          = [aws_subnet.public_subnet[0].id]
+    security_groups  = [aws_security_group.service_sg.id]
     assign_public_ip = true
   }
 }

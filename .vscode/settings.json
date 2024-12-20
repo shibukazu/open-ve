@@ -12,5 +12,15 @@
       "source.fixAll.ruff": "always",
       "source.organizeImports.ruff": "always"
     }
-  }
+  },
+  "[terraform]": {
+  "editor.defaultFormatter": "hashicorp.terraform",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file"
+},
+"[terraform-vars]": {
+  "editor.defaultFormatter": "hashicorp.terraform",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file"
+}
 }
