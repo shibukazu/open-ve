@@ -1,0 +1,16 @@
+[project]
+name = "open-ve"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "locust>=2.32.4",
+    "pydantic>=2.10.4",
+    "requests>=2.32.3",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13.0",
+    "ruff>=0.8.4",
+    "types-requests>=2.32.0.20241016",
+]

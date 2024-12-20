@@ -2,3 +2,9 @@
 local/
 config.yaml
 dist/
+# tarraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+# python
+__pycache__/
