@@ -1,0 +1,104 @@
+name: Load Test
+
+on: workflow_dispatch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # コードのチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # AWS認証情報の設定
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ap-northeast-1
+
+      # Terraformのセットアップ
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+          terraform_wrapper: false
+
+      # Terraformの初期化
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Set Terraform Outputs
+        working-directory: terraform
+        run: |
+          echo "ECR_URL=$(terraform output -raw load_test_ecr_repository_url)" >> $GITHUB_ENV
+          echo "SUBNET_ID=$(terraform output -raw load_test_public_subnet)" >> $GITHUB_ENV
+          echo "VPC_ID=$(terraform output -raw load_test_vpc_id)" >> $GITHUB_ENV
+          echo "ECS_CLUSTER_NAME=$(terraform output -raw load_test_ecs_cluster_name)" >> $GITHUB_ENV
+          echo "ECS_TASK_DIFINIION=$(terraform output -raw load_test_ecs_task_definition)" >> $GITHUB_ENV
+          echo "SERVICE_SECURITY_GROUP_ID=$(terraform output -raw load_test_service_security_group_id)" >> $GITHUB_ENV
+
+      # DockerイメージをビルドしてECRにプッシュ
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t $ECR_URL:latest .
+          echo "Logging into ECR"
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+          docker push $ECR_URL:latest
+
+      # ECSタスクを実行
+      - name: Run Fargate Task
+        run: |
+          TASK_ARN=$(aws ecs run-task \
+            --cluster $ECS_CLUSTER_NAME \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SERVICE_SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
+            --task-definition $ECS_TASK_DIFINIION \
+            --query "tasks[0].taskArn" \
+            --output text)
+          sleep 30
+          echo "Task ARN: $TASK_ARN"
+          echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
+          NETWORK_INTERFACE_ID=$(aws ecs describe-tasks --cluster $ECS_CLUSTER_NAME --tasks $TASK_ARN \
+            --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text)
+          PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $NETWORK_INTERFACE_ID \
+            --query "NetworkInterfaces[0].Association.PublicIp" --output text)
+          echo "Public IP: $PUBLIC_IP"
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+          sleep 30
+
+      # Locustで負荷テストを実行
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Run Locust Load Test
+        run: |
+          uv run locust -f test/locust/monolithic.py --host=http://$PUBLIC_IP:8080 --headless -u 1000 -r 20 -t 100 --only-summary --html locust_report.html
+
+      - name: Upload Locust Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-report
+          path: locust_report.html
+          if-no-files-found: warn
+          compression-level: 6
+          overwrite: false
+          include-hidden-files: false
+
+      # Fargateタスクの停止
+      - name: Stop Fargate Task
+        if: always()
+        run: |
+          aws ecs stop-task --cluster $ECS_CLUSTER_NAME --task $TASK_ARN

@@ -1,6 +1,6 @@
 RUNN_CMD := runn run
-RUNN_SCENARIO_FILES_MONOLITHIC := $(shell find runn/monolithic -name '*.yaml')
-RUNN_SCENARIO_FILES_MASTER_SLAVE := $(shell find runn/master-slave -name '*.yaml')
+RUNN_SCENARIO_FILES_MONOLITHIC := $(shell find test/runn/monolithic -name '*.yaml')
+RUNN_SCENARIO_FILES_MASTER_SLAVE := $(shell find test/runn/master-slave -name '*.yaml')
 
 api-test-monolithic: $(RUNN_SCENARIO_FILES_MONOLITHIC)
 	@if [ -z "$$MONOLITHIC_ENDPOINT" ]; then \

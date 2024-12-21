@@ -1,0 +1,26 @@
+{
+  "mypy-type-checker.args": [
+    "--disallow-untyped-defs",
+    "--ignore-missing-imports"
+  ],
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnType": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "always",
+      "source.organizeImports.ruff": "always"
+    }
+  },
+  "[terraform]": {
+  "editor.defaultFormatter": "hashicorp.terraform",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file"
+},
+"[terraform-vars]": {
+  "editor.defaultFormatter": "hashicorp.terraform",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file"
+}
+}
