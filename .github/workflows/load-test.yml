@@ -65,6 +65,7 @@ jobs:
             --task-definition $ECS_TASK_DIFINIION \
             --query "tasks[0].taskArn" \
             --output text)
+          sleep 30
           echo "Task ARN: $TASK_ARN"
           echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
           NETWORK_INTERFACE_ID=$(aws ecs describe-tasks --cluster $ECS_CLUSTER_NAME --tasks $TASK_ARN \
