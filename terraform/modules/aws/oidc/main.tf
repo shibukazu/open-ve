@@ -63,7 +63,10 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecs:DescribeTasks",
       "ecs:ListTasks",
       "ecs:DescribeClusters",
+      "ecs:DescribeTaskDefinition",
+      "ecs:DescribeServices",
       "s3:GetObject",
+      "s3:PutObject",
       "ec2:DescribeVpcs",
       "ec2:DescribeAvailabilityZones",
       "ec2:DescribeVpcAttribute",
@@ -76,8 +79,4 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
 
     resources = ["*"]
   }
-}
-
-output "oidc_role_arn" {
-  value = aws_iam_role.github_oidc_role.arn
 }
