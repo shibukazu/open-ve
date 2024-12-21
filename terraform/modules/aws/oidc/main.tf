@@ -56,15 +56,21 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecr:InitiateLayerUpload",
       "ecr:UploadLayerPart",
       "ecr:CompleteLayerUpload",
+      "ecr:GetAuthorizationToken",
+      "ecr:BatchCheckLayerAvailability",
       // ECS
       "ecs:RunTask",
       "ecs:StopTask",
       "ecs:DescribeTasks",
+      "ecs:RegisterTaskDefinition",
+      "ecs:DeregisterTaskDefinition",
       // S3
       "s3:GetObject",
       "s3:PutObject",
       // EC2(VPC)
-      "ec2:DeleteNetworkInterface",
+      "ec2:DescribeNetworkInterfaces",
+      // IAM
+      "iam:PassRole",
     ]
 
     resources = ["*"]

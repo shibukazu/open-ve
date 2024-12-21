@@ -19,14 +19,6 @@ from utils.requests import (
 def on_test_start(environment: Environment, **kwargs: Any) -> None:
     if environment.host is None:
         raise Exception("Host is not set")
-    if (
-        environment.parsed_options is None
-        or environment.parsed_options.auth_token is None
-    ):
-        raise Exception("Auth token is not set")
-    headers = {
-        "Authorization": f"Bearer {environment.parsed_options.auth_token}",
-    }
 
     body = RegisterRequestBody(
         validations=[
@@ -67,7 +59,6 @@ def on_test_start(environment: Environment, **kwargs: Any) -> None:
     res = requests.post(
         urljoin(environment.host, REGISTER_ENDPOINT),
         json=body.model_dump(),
-        headers=headers,
     )
 
     if res.status_code != 200:
