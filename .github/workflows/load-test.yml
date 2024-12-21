@@ -70,6 +70,7 @@ jobs:
             --output text)
           echo "Task ARN: $TASK_ARN"
           echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
+          sleep 10
           NETWORK_INTERFACE_ID=$(aws ecs describe-tasks --cluster $ECS_CLUSTER_NAME --tasks $TASK_ARN \
             --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text)
           PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $NETWORK_INTERFACE_ID \
@@ -103,5 +104,6 @@ jobs:
 
       # Fargateタスクの停止
       - name: Stop Fargate Task
+        if: always()
         run: |
           aws ecs stop-task --cluster $ECS_CLUSTER_NAME --task $TASK_ARN
