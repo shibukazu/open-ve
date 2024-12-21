@@ -122,6 +122,7 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "iam:GetRole",
       "iam:ListRolePolicies",
       "iam:ListAttachedRolePolicies",
+      "iam:ListInstanceProfilesForRole",
       "iam:PassRole",
       "iam:CreateRole",
       "iam:DeleteRole",
