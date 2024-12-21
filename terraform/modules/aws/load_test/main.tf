@@ -169,8 +169,8 @@ output "ecr_repository_url" {
   value = aws_ecr_repository.repo.repository_url
 }
 
-output "public_subnets" {
-  value = aws_subnet.public_subnet[*].id
+output "public_subnet" {
+  value = aws_subnet.public_subnet[0].id
 }
 
 output "vpc_id" {

@@ -40,15 +40,10 @@ jobs:
       - name: Terraform Apply
         working-directory: terraform
         run: |
-          jq -V
           terraform apply -target=module.load_test -auto-approve -var="preshared_key=${{ secrets.PRESHARED_KEY }}"
-          terraform output -json load_test_ecr_repository_url
-          echo "ECR_URL=$(terraform output -json load_test_ecr_repository_url | jq -r '.')"
-          echo "ECR_URL=$(terraform output -json load_test_ecr_repository_url | jq -r '.')" >> $GITHUB_ENV
-          echo "PUBLIC_SUBNETS=$(terraform output -json load_test_public_subnets | jq -r '.[]')"
-          echo "PUBLIC_SUBNETS=$(terraform output -json load_test_public_subnets | jq -r '.[]')" >> $GITHUB_ENV
-          echo "VPC_ID=$(terraform output -json load_test_vpc_id | jq -r '.')"
-          echo "VPC_ID=$(terraform output -json load_test_vpc_id | jq -r '.')" >> $GITHUB_ENV
+          echo "ECR_URL=$(terraform output -raw load_test_ecr_repository_url)" >> $GITHUB_ENV
+          echo "PUBLIC_SUBNETS=$(terraform output -raw load_test_public_subnet)" >> $GITHUB_ENV
+          echo "VPC_ID=$(terraform output -raw load_test_vpc_id)" >> $GITHUB_ENV
 
       # DockerイメージをビルドしてECRにプッシュ
       - name: Build and Push Docker Image
