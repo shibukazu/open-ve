@@ -89,13 +89,13 @@ jobs:
 
       - name: Run Locust Load Test
         run: |
-          uv run locust -f test/locust/monolithic.py --host=http://$PUBLIC_IP:8080 --headless -u 1000 -r 20 -t 100 --auth-token ${{ secrets.PRESHARED_KEY }} --only-summary --html reports/locust_report.html
+          uv run locust -f test/locust/monolithic.py --host=http://$PUBLIC_IP:8080 --headless -u 1000 -r 20 -t 100 --auth-token ${{ secrets.PRESHARED_KEY }} --only-summary --html locust_report.html
 
       - name: Upload Locust Report
         uses: actions/upload-artifact@v3
         with:
           name: locust-report
-          path: reports/locust_report.html
+          path: locust_report.html
 
       # Fargateタスクの停止
       - name: Stop Fargate Task
