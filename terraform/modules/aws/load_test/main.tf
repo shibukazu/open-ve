@@ -108,6 +108,21 @@ resource "aws_ecs_task_definition" "task" {
           value = var.preshared_key
         }
       ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-region        = "ap-northeast-1" # 使用しているリージョン
+          awslogs-group         = "/ecs/${local.prefix}-logs"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+      healthCheck = {
+        command     = ["CMD-SHELL", "STATUS=$(curl -s http://localhost:8080/healthz | jq -r .status); if [ \"$STATUS\" == \"SERVING\" ]; then exit 0; else exit 1; fi"]
+        interval    = 5
+        timeout     = 5
+        retries     = 3
+        startPeriod = 10
+      }
     }
   ])
 
