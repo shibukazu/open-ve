@@ -37,6 +37,11 @@ jobs:
         working-directory: terraform
         run: terraform init
 
+      # TODO: 消す
+      - name: Terraform Destroy
+        working-directory: terraform
+        run: terraform destroy -target=module.load_test -auto-approve -var="preshared_key=${{ secrets.PRESHARED_KEY }}"
+
       # Terraformでインフラを作成
       - name: Terraform Apply
         working-directory: terraform
@@ -92,10 +97,14 @@ jobs:
           uv run locust -f test/locust/monolithic.py --host=http://$PUBLIC_IP:8080 --headless -u 1000 -r 20 -t 100 --auth-token ${{ secrets.PRESHARED_KEY }} --only-summary --html locust_report.html
 
       - name: Upload Locust Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: locust-report
           path: locust_report.html
+          if-no-files-found: warn
+          compression-level: 6
+          overwrite: false
+          include-hidden-files: false
 
       # Fargateタスクの停止
       - name: Stop Fargate Task

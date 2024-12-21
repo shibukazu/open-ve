@@ -64,6 +64,7 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecr:CompleteLayerUpload",
       "ecr:CreateRepository",
       "ecr:DeleteRepository",
+      "ecr:DeleteRepositoryPolicy",
       "ecr:TagResource",
       // ECS
       "ecs:RunTask",
@@ -76,10 +77,12 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecs:CreateCluster",
       "ecs:DeleteCluster",
       "ecs:CreateService",
-      "ecs:DeleteService",
       "ecs:UpdateService",
+      "ecs:DeleteService",
       "ecs:TagResource",
+      "ecs:UntagResource",
       "ecs:RegisterTaskDefinition",
+      "ecs:DeregisterTaskDefinition",
       // S3
       "s3:GetObject",
       "s3:PutObject",
@@ -98,11 +101,13 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ec2:DeleteSubnet",
       "ec2:CreateInternetGateway",
       "ec2:AttachInternetGateway",
+      "ec2:DetachInternetGateway",
       "ec2:DeleteInternetGateway",
       "ec2:CreateRouteTable",
       "ec2:DeleteRouteTable",
       "ec2:CreateRoute",
       "ec2:AssociateRouteTable",
+      "ec2:DisassociateRouteTable",
       "ec2:CreateSecurityGroup",
       "ec2:DeleteSecurityGroup",
       "ec2:AuthorizeSecurityGroupIngress",
@@ -110,6 +115,7 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ec2:AuthorizeSecurityGroupEgress",
       "ec2:RevokeSecurityGroupEgress",
       "ec2:CreateTags",
+      "ec2:DeleteTags",
       "ec2:ModifyVpcAttribute",
       "ec2:ModifySubnetAttribute",
       // IAM
@@ -121,6 +127,8 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "iam:DeleteRole",
       "iam:TagRole",
       "iam:AttachRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:DetachRolePolicy",
     ]
 
     resources = ["*"]
