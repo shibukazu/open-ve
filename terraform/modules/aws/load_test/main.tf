@@ -68,6 +68,11 @@ resource "aws_ecs_cluster" "cluster" {
   name = "${local.prefix}-ecs_cluster"
 }
 
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name              = "/ecs/${local.prefix}-logs"
+  retention_in_days = 7
+}
+
 resource "aws_ecs_task_definition" "task" {
   family                   = "${local.prefix}-ecs_task"
   requires_compatibilities = ["FARGATE"]
@@ -172,7 +177,7 @@ resource "aws_ecs_service" "service" {
   name            = "${local.prefix}-ecs_service"
   cluster         = aws_ecs_cluster.cluster.id
   task_definition = aws_ecs_task_definition.task.arn
-  desired_count   = 1
+  desired_count   = 0
   launch_type     = "FARGATE"
 
   network_configuration {

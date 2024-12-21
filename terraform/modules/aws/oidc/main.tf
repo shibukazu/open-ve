@@ -83,6 +83,8 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecs:UntagResource",
       "ecs:RegisterTaskDefinition",
       "ecs:DeregisterTaskDefinition",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
       // S3
       "s3:GetObject",
       "s3:PutObject",
