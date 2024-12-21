@@ -41,6 +41,7 @@ jobs:
         working-directory: terraform
         run: |
           terraform apply -target=module.load_test -auto-approve -var="preshared_key=${{ secrets.PRESHARED_KEY }}"
+          terraform output 
           echo "ECR_URL=$(terraform output -json load_test_ecr_repository_url | jq -r '.')" >> $GITHUB_ENV
           echo "PUBLIC_SUBNETS=$(terraform output -json load_test_public_subnets | jq -r '.[]')" >> $GITHUB_ENV
           echo "VPC_ID=$(terraform output -json load_test_vpc_id | jq -r '.')" >> $GITHUB_ENV
