@@ -67,13 +67,13 @@ jobs:
             --output text)
           echo "Task ARN: $TASK_ARN"
           echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
-          sleep 10
           NETWORK_INTERFACE_ID=$(aws ecs describe-tasks --cluster $ECS_CLUSTER_NAME --tasks $TASK_ARN \
             --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text)
           PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $NETWORK_INTERFACE_ID \
             --query "NetworkInterfaces[0].Association.PublicIp" --output text)
           echo "Public IP: $PUBLIC_IP"
           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+          sleep 30
 
       # Locustで負荷テストを実行
       - name: Install uv
