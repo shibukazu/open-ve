@@ -43,8 +43,12 @@ jobs:
         run: |
           terraform apply -target=module.load_test -auto-approve -var="preshared_key=${{ secrets.PRESHARED_KEY }}"
           echo "ECR_URL=$(terraform output -raw load_test_ecr_repository_url)" >> $GITHUB_ENV
-          echo "PUBLIC_SUBNETS=$(terraform output -raw load_test_public_subnet)" >> $GITHUB_ENV
+          echo "SUBNET_ID=$(terraform output -raw load_test_public_subnet)" >> $GITHUB_ENV
           echo "VPC_ID=$(terraform output -raw load_test_vpc_id)" >> $GITHUB_ENV
+          echo "ECS_CLUSTER_NAME=$(terraform output -raw load_test_ecs_cluster_name)" >> $GITHUB_ENV
+          echo "ECS_TASK_DIFINIION=$(terraform output -raw load_test_ecs_task_definition)" >> $GITHUB_ENV
+          echo "ECS_SERVICE_NAME=$(terraform output -raw load_test_ecs_service_name)" >> $GITHUB_ENV
+          echo "SERVICE_SECURITY_GROUP_ID=$(terraform output -raw load_test_service_security_group_id)" >> $GITHUB_ENV
 
       # DockerイメージをビルドしてECRにプッシュ
       - name: Build and Push Docker Image
@@ -58,23 +62,37 @@ jobs:
       - name: Run Fargate Task
         run: |
           TASK_ARN=$(aws ecs run-task \
-            --cluster ${local.prefix}-ecs_cluster \
+            --cluster $ECS_CLUSTER_NAME \
             --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[${local.prefix}-service-security-group],assignPublicIp=ENABLED}" \
-            --task-definition ${local.prefix}-ecs_task \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SERVICE_SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
+            --task-definition $ECS_TASK_DIFINIION \
             --query "tasks[0].taskArn" \
             --output text)
           echo "Task ARN: $TASK_ARN"
           echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
+          NETWORK_INTERFACE_ID=$(aws ecs describe-tasks --cluster $ECS_CLUSTER_NAME --tasks $TASK_ARN \
+            --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text)
+          PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $NETWORK_INTERFACE_ID \
+            --query "NetworkInterfaces[0].Association.PublicIp" --output text)
+          echo "Public IP: $PUBLIC_IP"
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
       # Locustで負荷テストを実行
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
       - name: Run Locust Load Test
         run: |
-          locust -f locust/monolithic.py --host=http://$SUBNET_ID --headless -u 1000 -r 10 -t 100
+          uv run locust -f locust/monolithic.py --host=http://$PUBLIC_IP --headless -u 1000 -r 10 -t 100
 
       # Fargateタスクの停止
       - name: Stop Fargate Task
-        if: always()
         run: |
           aws ecs stop-task --cluster ${local.prefix}-ecs_cluster --task $TASK_ARN
 

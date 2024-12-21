@@ -58,6 +58,9 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecr:DescribeRepositories",
       "ecr:ListTagsForResource",
       "ecr:PutImage",
+      "ecr:InitiateLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload",
       "ecs:RunTask",
       "ecs:StopTask",
       "ecs:DescribeTasks",
@@ -75,6 +78,7 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "iam:GetRole",
       "iam:ListRolePolicies",
       "iam:ListAttachedRolePolicies",
+      "iam:PassRole",
     ]
 
     resources = ["*"]

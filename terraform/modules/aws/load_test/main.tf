@@ -11,12 +11,34 @@ resource "aws_ecr_repository" "repo" {
 
 // AWS ECS
 
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.vpc.id
+
+  tags = {
+    Name = "${local.prefix}-igw"
+  }
+}
+
+
 resource "aws_vpc" "vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
     Name = "${local.prefix}-vpc"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name = "${local.prefix}-public-rt"
   }
 }
 
@@ -34,6 +56,11 @@ resource "aws_subnet" "public_subnet" {
   tags = {
     Name = "${local.prefix}-public-subnet-${count.index}"
   }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public_subnet[0].id
+  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_ecs_cluster" "cluster" {
@@ -175,4 +202,20 @@ output "public_subnet" {
 
 output "vpc_id" {
   value = aws_vpc.vpc.id
+}
+
+output "ecs_cluster_name" {
+  value = aws_ecs_cluster.cluster.name
+}
+
+output "ecs_task_definition" {
+  value = aws_ecs_task_definition.task.family
+}
+
+output "ecs_service_name" {
+  value = aws_ecs_service.service.name
+}
+
+output "service_security_group_id" {
+  value = aws_security_group.service_sg.id
 }
