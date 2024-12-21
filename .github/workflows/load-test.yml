@@ -37,11 +37,6 @@ jobs:
         working-directory: terraform
         run: terraform init
 
-      # TODO: 消す
-      - name: Terraform Destroy
-        working-directory: terraform
-        run: terraform destroy -target=module.load_test -auto-approve -var="preshared_key=${{ secrets.PRESHARED_KEY }}"
-
       # Terraformでインフラを作成
       - name: Terraform Apply
         working-directory: terraform
@@ -110,8 +105,3 @@ jobs:
       - name: Stop Fargate Task
         run: |
           aws ecs stop-task --cluster $ECS_CLUSTER_NAME --task $TASK_ARN
-
-      # Terraformでリソースを削除
-      - name: Terraform Destroy
-        working-directory: terraform
-        run: terraform destroy -target=module.load_test -auto-approve -var="preshared_key=${{ secrets.PRESHARED_KEY }}"
