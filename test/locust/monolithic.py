@@ -13,13 +13,32 @@ from utils.requests import (
 )
 
 from locust import HttpUser, events, task
+from locust.argument_parser import LocustArgumentParser
 from locust.env import Environment
+
+
+@events.init_command_line_parser.add_listener
+def init_parser(parser: LocustArgumentParser) -> None:
+    parser.add_argument(
+        "--auth-token",
+        type=str,
+        required=True,
+        help="Authentication token to be used in requests",
+    )
 
 
 @events.test_start.add_listener
 def on_test_start(environment: Environment, **kwargs: Any) -> None:
     if environment.host is None:
         raise Exception("Host is not set")
+    if (
+        environment.parsed_options is None
+        or environment.parsed_options.auth_token is None
+    ):
+        raise Exception("Auth token is not set")
+    headers = {
+        "Authorization": f"Bearer {environment.parsed_options.auth_token}",
+    }
 
     body = RegisterRequestBody(
         validations=[
@@ -58,7 +77,9 @@ def on_test_start(environment: Environment, **kwargs: Any) -> None:
     print(body.model_dump_json())
 
     res = requests.post(
-        urljoin(environment.host, REGISTER_ENDPOINT), json=body.model_dump()
+        urljoin(environment.host, REGISTER_ENDPOINT),
+        json=body.model_dump(),
+        headers=headers,
     )
 
     if res.status_code != 200:
@@ -67,6 +88,11 @@ def on_test_start(environment: Environment, **kwargs: Any) -> None:
 
 
 class User(HttpUser):
+    def on_start(self) -> None:
+        self.headers = {
+            "Authorization": f"Bearer {self.environment.parsed_options.auth_token}",
+        }
+
     @task
     def validate(self) -> None:
         body = ValidateRequestBody(
@@ -87,7 +113,10 @@ class User(HttpUser):
             ]
         )
         with self.client.post(
-            VALIDATE_ENDPOINT, json=body.model_dump(), catch_response=True
+            VALIDATE_ENDPOINT,
+            json=body.model_dump(),
+            headers=self.headers,
+            catch_response=True,
         ) as res:
             if res.status_code != 200:
                 res.failure(f"Failed to validate request: {res.text}")

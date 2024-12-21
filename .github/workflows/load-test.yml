@@ -89,12 +89,12 @@ jobs:
 
       - name: Run Locust Load Test
         run: |
-          uv run locust -f locust/monolithic.py --host=http://$PUBLIC_IP --headless -u 1000 -r 10 -t 100
+          uv run locust -f locust/monolithic.py --host=http://$PUBLIC_IP:8080 --headless -u 1000 -r 20 -t 100 --auth-token ${{ secrets.PRESHARED_KEY }}
 
       # Fargateタスクの停止
       - name: Stop Fargate Task
         run: |
-          aws ecs stop-task --cluster ${local.prefix}-ecs_cluster --task $TASK_ARN
+          aws ecs stop-task --cluster $ECS_CLUSTER_NAME --task $TASK_ARN
 
       # Terraformでリソースを削除
       - name: Terraform Destroy
