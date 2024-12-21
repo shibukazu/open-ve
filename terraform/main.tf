@@ -1,7 +1,6 @@
 
 module "load_test" {
-  source        = "./modules/aws/load_test"
-  preshared_key = var.preshared_key
+  source = "./modules/aws/load_test"
 }
 
 module "oidc" {
@@ -26,10 +25,6 @@ output "load_test_ecs_cluster_name" {
 
 output "load_test_ecs_task_definition" {
   value = module.load_test.ecs_task_definition
-}
-
-output "load_test_ecs_service_name" {
-  value = module.load_test.ecs_service_name
 }
 
 output "load_test_service_security_group_id" {

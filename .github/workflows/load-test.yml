@@ -37,17 +37,14 @@ jobs:
         working-directory: terraform
         run: terraform init
 
-      # Terraformでインフラを作成
-      - name: Terraform Apply
+      - name: Set Terraform Outputs
         working-directory: terraform
         run: |
-          terraform apply -target=module.load_test -auto-approve -var="preshared_key=${{ secrets.PRESHARED_KEY }}"
           echo "ECR_URL=$(terraform output -raw load_test_ecr_repository_url)" >> $GITHUB_ENV
           echo "SUBNET_ID=$(terraform output -raw load_test_public_subnet)" >> $GITHUB_ENV
           echo "VPC_ID=$(terraform output -raw load_test_vpc_id)" >> $GITHUB_ENV
           echo "ECS_CLUSTER_NAME=$(terraform output -raw load_test_ecs_cluster_name)" >> $GITHUB_ENV
           echo "ECS_TASK_DIFINIION=$(terraform output -raw load_test_ecs_task_definition)" >> $GITHUB_ENV
-          echo "ECS_SERVICE_NAME=$(terraform output -raw load_test_ecs_service_name)" >> $GITHUB_ENV
           echo "SERVICE_SECURITY_GROUP_ID=$(terraform output -raw load_test_service_security_group_id)" >> $GITHUB_ENV
 
       # DockerイメージをビルドしてECRにプッシュ
@@ -90,7 +87,7 @@ jobs:
 
       - name: Run Locust Load Test
         run: |
-          uv run locust -f test/locust/monolithic.py --host=http://$PUBLIC_IP:8080 --headless -u 1000 -r 20 -t 100 --auth-token ${{ secrets.PRESHARED_KEY }} --only-summary --html locust_report.html
+          uv run locust -f test/locust/monolithic.py --host=http://$PUBLIC_IP:8080 --headless -u 1000 -r 20 -t 100 --only-summary --html locust_report.html
 
       - name: Upload Locust Report
         uses: actions/upload-artifact@v4

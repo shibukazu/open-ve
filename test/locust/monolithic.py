@@ -2,6 +2,8 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
+from locust import HttpUser, events, task
+from locust.env import Environment
 from utils.requests import (
     REGISTER_ENDPOINT,
     VALIDATE_ENDPOINT,
@@ -11,20 +13,6 @@ from utils.requests import (
     ValidateRequestBody,
     ValidateRequestValidation,
 )
-
-from locust import HttpUser, events, task
-from locust.argument_parser import LocustArgumentParser
-from locust.env import Environment
-
-
-@events.init_command_line_parser.add_listener
-def init_parser(parser: LocustArgumentParser) -> None:
-    parser.add_argument(
-        "--auth-token",
-        type=str,
-        required=True,
-        help="Authentication token to be used in requests",
-    )
 
 
 @events.test_start.add_listener
@@ -88,11 +76,6 @@ def on_test_start(environment: Environment, **kwargs: Any) -> None:
 
 
 class User(HttpUser):
-    def on_start(self) -> None:
-        self.headers = {
-            "Authorization": f"Bearer {self.environment.parsed_options.auth_token}",
-        }
-
     @task
     def validate(self) -> None:
         body = ValidateRequestBody(
@@ -115,7 +98,6 @@ class User(HttpUser):
         with self.client.post(
             VALIDATE_ENDPOINT,
             json=body.model_dump(),
-            headers=self.headers,
             catch_response=True,
         ) as res:
             if res.status_code != 200:

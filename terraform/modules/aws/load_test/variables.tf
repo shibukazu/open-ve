@@ -1,1 +1,0 @@
-variable "preshared_key" {}

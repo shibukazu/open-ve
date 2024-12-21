@@ -103,14 +103,6 @@ resource "aws_ecs_task_definition" "task" {
         {
           name  = "OPEN-VE_MODE"
           value = "master"
-        },
-        {
-          name  = "OPEN-VE_AUTHN_METHOD"
-          value = "preshared"
-        },
-        {
-          name  = "OPEN-VE_AUTHN_PRESHARED_KEY"
-          value = var.preshared_key
         }
       ]
       logConfiguration = {
@@ -122,8 +114,8 @@ resource "aws_ecs_task_definition" "task" {
         }
       }
       healthCheck = {
-        command     = ["CMD-SHELL", "STATUS=$(curl -s http://localhost:8080/healthz | jq -r .status); if [ \"$STATUS\" == \"SERVING\" ]; then exit 0; else exit 1; fi"]
-        interval    = 5
+        command     = ["CMD-SHELL", "curl -f http://localhost:8080/healthz || exit 1"]
+        interval    = 30
         timeout     = 5
         retries     = 3
         startPeriod = 10
@@ -173,19 +165,6 @@ resource "aws_iam_role" "task_role" {
   })
 }
 
-resource "aws_ecs_service" "service" {
-  name            = "${local.prefix}-ecs_service"
-  cluster         = aws_ecs_cluster.cluster.id
-  task_definition = aws_ecs_task_definition.task.arn
-  desired_count   = 0
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = [aws_subnet.public_subnet[0].id]
-    security_groups  = [aws_security_group.service_sg.id]
-    assign_public_ip = true
-  }
-}
 resource "aws_security_group" "service_sg" {
   name        = "${local.prefix}-service-security-group"
   description = "Allow service traffic"
@@ -231,10 +210,6 @@ output "ecs_cluster_name" {
 
 output "ecs_task_definition" {
   value = aws_ecs_task_definition.task.family
-}
-
-output "ecs_service_name" {
-  value = aws_ecs_service.service.name
 }
 
 output "service_security_group_id" {
