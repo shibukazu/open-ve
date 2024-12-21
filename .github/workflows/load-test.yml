@@ -79,6 +79,5 @@ jobs:
 
       # Terraformでリソースを削除
       - name: Terraform Destroy
-        if: always()
         working-directory: terraform
         run: terraform destroy -target=module.load_test -auto-approve

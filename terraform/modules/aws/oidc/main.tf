@@ -55,11 +55,23 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecr:BatchCheckLayerAvailability",
       "ecr:GetDownloadUrlForLayer",
       "ecr:BatchGetImage",
+      "ecr:DescribeRepositories",
+      "ecr:ListTagsForResource",
       "ecr:PutImage",
       "ecs:RunTask",
       "ecs:StopTask",
       "ecs:DescribeTasks",
-      "ecs:ListTasks"
+      "ecs:ListTasks",
+      "ecs:DescribeClusters",
+      "s3:GetObject",
+      "ec2:DescribeVpcs",
+      "ec2:DescribeAvailabilityZones",
+      "ec2:DescribeVpcAttribute",
+      "ec2:DescribeSubnets",
+      "ec2:DescribeSecurityGroups",
+      "iam:GetRole",
+      "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies",
     ]
 
     resources = ["*"]
