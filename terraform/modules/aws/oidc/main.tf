@@ -51,6 +51,7 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
     effect = "Allow"
 
     actions = [
+      // ECR
       "ecr:GetAuthorizationToken",
       "ecr:BatchCheckLayerAvailability",
       "ecr:GetDownloadUrlForLayer",
@@ -61,6 +62,10 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecr:InitiateLayerUpload",
       "ecr:UploadLayerPart",
       "ecr:CompleteLayerUpload",
+      "ecr:CreateRepository", // 追加
+      "ecr:DeleteRepository", // 追加
+
+      // ECS
       "ecs:RunTask",
       "ecs:StopTask",
       "ecs:DescribeTasks",
@@ -68,17 +73,47 @@ data "aws_iam_policy_document" "github_oidc_access_policy" {
       "ecs:DescribeClusters",
       "ecs:DescribeTaskDefinition",
       "ecs:DescribeServices",
-      "s3:GetObject",
-      "s3:PutObject",
+      "ecs:CreateCluster", // 追加
+      "ecs:DeleteCluster", // 追加
+      "ecs:RegisterTaskDefinition",
+      "ecs:DeregisterTaskDefinition",
+      "ecs:CreateService", // 追加
+      "ecs:DeleteService", // 追加
+      "ecs:UpdateService", // 追加
+
+      // EC2 (VPC関連)
       "ec2:DescribeVpcs",
       "ec2:DescribeAvailabilityZones",
       "ec2:DescribeVpcAttribute",
       "ec2:DescribeSubnets",
       "ec2:DescribeSecurityGroups",
+      "ec2:CreateVpc",             // 追加
+      "ec2:DeleteVpc",             // 追加
+      "ec2:CreateSubnet",          // 追加
+      "ec2:DeleteSubnet",          // 追加
+      "ec2:CreateInternetGateway", // 追加
+      "ec2:AttachInternetGateway", // 追加
+      "ec2:DeleteInternetGateway", // 追加
+      "ec2:CreateRouteTable",      // 追加
+      "ec2:DeleteRouteTable",      // 追加
+      "ec2:CreateRoute",           // 追加
+      "ec2:AssociateRouteTable",   // 追加
+
+      // IAM
       "iam:GetRole",
       "iam:ListRolePolicies",
       "iam:ListAttachedRolePolicies",
       "iam:PassRole",
+      "iam:CreateRole", // 追加
+      "iam:DeleteRole", // 追加
+
+      // Security Groups
+      "ec2:CreateSecurityGroup",           // 追加
+      "ec2:DeleteSecurityGroup",           // 追加
+      "ec2:AuthorizeSecurityGroupIngress", // 追加
+      "ec2:RevokeSecurityGroupIngress",    // 追加
+      "ec2:AuthorizeSecurityGroupEgress",  // 追加
+      "ec2:RevokeSecurityGroupEgress"      // 追加
     ]
 
     resources = ["*"]
