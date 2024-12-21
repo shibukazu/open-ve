@@ -5,7 +5,8 @@ locals {
 // AWS ECR
 
 resource "aws_ecr_repository" "repo" {
-  name = "${local.prefix}-repo"
+  name         = "${local.prefix}-repo"
+  force_delete = true
 }
 
 
