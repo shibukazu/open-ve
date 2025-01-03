@@ -66,6 +66,10 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_ecs_cluster" "cluster" {
   name = "${local.prefix}-ecs_cluster"
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
 }
 
 resource "aws_cloudwatch_log_group" "ecs_logs" {
@@ -77,15 +81,15 @@ resource "aws_ecs_task_definition" "task" {
   family                   = "${local.prefix}-ecs_task"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "2048"
+  cpu                      = "2048"
+  memory                   = "4096"
 
   container_definitions = jsonencode([
     {
       name      = "${local.prefix}-container"
       image     = aws_ecr_repository.repo.repository_url
-      cpu       = 256
-      memory    = 2048
+      cpu       = 2048
+      memory    = 4096
       essential = true
       portMappings = [
         {
@@ -145,6 +149,7 @@ resource "aws_iam_role" "execution_role" {
 
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
   ]
 }
 
