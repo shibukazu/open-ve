@@ -64,6 +64,7 @@ docker-compose up
 
 - [Config](docs/Config.md)
 - [TLS](docs/TLS.md)
+- [Performance](docs/Performance.md)
 
 ## Limitation
 
