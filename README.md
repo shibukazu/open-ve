@@ -7,7 +7,7 @@
 
 A powerful solution that **simplifies the management of validation rules**, ensuring consistent validation across all layers, including frontend, BFF, and microservices, through a single, simple API.
 
-Open-VE offers an **HTTP API** and a **gRPC API**. We will provide a client SDK in the future.
+Open-VE offers an **HTTP API** and a **gRPC API**. We currently provide a [Go](https://github.com/shibukazu/open-ve-go-sdk) and [TypeScript](https://github.com/shibukazu/open-ve-typescript-sdk) SDK.
 
 ## Features
 
